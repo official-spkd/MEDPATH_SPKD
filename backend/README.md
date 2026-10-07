@@ -76,6 +76,7 @@ Semua akun pakai sandi **`Demo-SPKD-2026`**:
 | GET | `/dokumen-panduan` | Bearer | Daftar dokumen panduan |
 | GET/POST/DELETE | `/padanan/kptl`, `/padanan/snomed` | Bearer | Meja kerja padanan kode (+`/{kode}/usulan`) |
 | GET | `/evaluasi`, `/evaluasi/{kode}` | Bearer | Evaluasi CP aktif (kendali mutu & biaya) |
+| GET | `/panduan` | Bearer **SUPER_ADMIN** | Panduan Lengkap Super Admin (selain itu `403`) |
 | GET | `/kesehatan` | — | Health check |
 
 Autentikasi: header `Authorization: Bearer <token>`. Token sesi disimpan di memori

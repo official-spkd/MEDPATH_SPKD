@@ -41,6 +41,8 @@
   --info: #0284c7;
   --info-bg: #e5f3fb;
 
+  --kode-bg: #1e1312; /* blok kode di panduan */
+
   --navy: #4a2420;
   --navy-600: #6b2f28;
   --navy-100: #f7e7e3;
@@ -72,6 +74,7 @@ html.dark {
   --ungu-bg: #261b3a;
   --info-bg: #0c2a3d;
   --navy-100: #2a1512;
+  --kode-bg: #0d0605;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.55);

@@ -30,6 +30,17 @@ func (s *Server) auth(h http.HandlerFunc) http.Handler {
 	})
 }
 
+// hanyaSuperAdmin dipasang di dalam auth: menolak selain SUPER_ADMIN dengan 403.
+func (s *Server) hanyaSuperAdmin(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if u := userDari(r); u == nil || u.Peran != "SUPER_ADMIN" {
+			tulisGalat(w, http.StatusForbidden, "Akses ini khusus Super Admin.")
+			return
+		}
+		h(w, r)
+	}
+}
+
 func bearerToken(r *http.Request) string {
 	h := r.Header.Get("Authorization")
 	if after, ok := strings.CutPrefix(h, "Bearer "); ok {

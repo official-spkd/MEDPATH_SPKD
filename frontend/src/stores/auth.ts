@@ -20,6 +20,7 @@ export const useAuth = defineStore('auth', {
   getters: {
     masuk: (s) => !!s.token,
     isAdmin: (s) => ADMIN.includes(s.pengguna?.peran ?? ''),
+    isSuperAdmin: (s) => s.pengguna?.peran === 'SUPER_ADMIN',
   },
   actions: {
     async login(email: string, password: string) {

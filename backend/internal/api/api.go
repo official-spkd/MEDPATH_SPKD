@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"transcpg/internal/panduan"
 	"transcpg/internal/store"
 )
 
@@ -69,6 +70,9 @@ func (s *Server) rute() {
 	// Evaluasi
 	s.mux.Handle("GET /api/v1/evaluasi", s.auth(s.evaluasi))
 	s.mux.Handle("GET /api/v1/evaluasi/{kode}", s.auth(s.evaluasiDetail))
+
+	// Panduan Lengkap Super Admin
+	s.mux.Handle("GET /api/v1/panduan", s.auth(s.hanyaSuperAdmin(s.panduan)))
 }
 
 // --- Handlers ---
@@ -272,6 +276,17 @@ func (s *Server) hapusSnomed(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) usulanSnomed(w http.ResponseWriter, r *http.Request) {
 	tulisJSON(w, http.StatusOK, map[string]any{"data": s.store.UsulanSnomed(r.PathValue("icd10"))})
+}
+
+// --- Panduan ---
+
+func (s *Server) panduan(w http.ResponseWriter, _ *http.Request) {
+	daftar, err := panduan.Daftar()
+	if err != nil {
+		tulisGalat(w, http.StatusInternalServerError, "Panduan gagal dimuat.")
+		return
+	}
+	tulisJSON(w, http.StatusOK, map[string]any{"data": daftar})
 }
 
 // --- Evaluasi ---

@@ -37,6 +37,8 @@ Buka http://localhost:5173 → klik salah satu chip akun demo (sandi `Demo-SPKD-
   syarat kelengkapan dihitung ulang langsung
 - ✅ Padanan KPTL & SNOMED-CT (meja kerja + usulan otomatis) dan Evaluasi CP (kendali mutu & biaya)
 - ✅ Tema salmon/merah (gaya MedClaim, bukan warnanya) — light + dark
+- ✅ **Panduan Lengkap Super Admin** (Pengaturan → kartu ke-4): 13 bab dokumentasi teknis,
+  ditulis di `backend/internal/panduan/isi/*.md`, hanya bisa diakses SUPER_ADMIN
 - ✅ **PostgreSQL** menyimpan state (status CP, isi klinis, riwayat, padanan) — bertahan lintas restart;
   fallback in-memory bila DB mati
 

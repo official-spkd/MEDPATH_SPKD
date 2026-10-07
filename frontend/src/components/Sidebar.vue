@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   LayoutDashboard,
   Library,
@@ -21,6 +21,13 @@ import LogoSpkd from './LogoSpkd.vue'
 const props = defineProps<{ antrean: number }>()
 const auth = useAuth()
 const router = useRouter()
+const route = useRoute()
+
+// Rute turunan (mis. /library/:kode, /pengaturan/panduan) adalah saudara di router,
+// jadi router-link tidak menandainya aktif — cocokkan prefiks path secara manual.
+function aktifPrefiks(it: { to: string; exact?: boolean }) {
+  return !it.exact && route.path.startsWith(it.to + '/')
+}
 
 interface Item {
   label: string
@@ -77,6 +84,7 @@ async function keluar() {
           :key="it.to"
           :to="it.to"
           class="item"
+          :class="{ aktif: aktifPrefiks(it) }"
           :active-class="it.exact ? '' : 'aktif'"
           :exact-active-class="it.exact ? 'aktif' : ''"
         >

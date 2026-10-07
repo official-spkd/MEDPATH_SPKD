@@ -17,6 +17,12 @@ const routes = [
       { path: 'padanan/kptl', name: 'kptl', component: () => import('@/pages/Padanan.vue'), meta: { judul: 'Padanan KPTL' } },
       { path: 'padanan/snomed', name: 'snomed', component: () => import('@/pages/Padanan.vue'), meta: { judul: 'Padanan SNOMED-CT' } },
       { path: 'pengaturan', name: 'pengaturan', component: () => import('@/pages/Pengaturan.vue'), meta: { judul: 'Pengaturan', admin: true } },
+      {
+        path: 'pengaturan/panduan',
+        name: 'panduan',
+        component: () => import('@/pages/PanduanSuperAdmin.vue'),
+        meta: { judul: 'Panduan Super Admin', superAdmin: true },
+      },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
@@ -37,4 +43,6 @@ router.beforeEach(async (to) => {
   }
   if (to.name === 'login' && auth.masuk) return { path: '/' }
   if (to.meta.admin && !auth.isAdmin) return { path: '/' }
+  // Kosmetik saja — batas sesungguhnya: backend membalas 403 untuk selain SUPER_ADMIN.
+  if (to.meta.superAdmin && !auth.isSuperAdmin) return { path: auth.isAdmin ? '/pengaturan' : '/' }
 })
