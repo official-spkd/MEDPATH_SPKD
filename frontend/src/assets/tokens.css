@@ -1,0 +1,78 @@
+/* Design system MedPath — gaya MedClaim SPKD, palet SALMON/MERAH. */
+:root {
+  --brand: #f2695e; /* salmon-merah */
+  --brand-hover: #e8544a;
+  --brand-aktif: #d13b30;
+  --brand-light: #fdeceb;
+  --brand-gelap: #9e2b22;
+  --gradient-brand: linear-gradient(135deg, #3a0f0b 0%, #8a241a 52%, #e85749 100%);
+  --gradient-hero: radial-gradient(1100px 520px at 85% -10%, rgba(242, 105, 94, 0.3), transparent 60%),
+    linear-gradient(160deg, #290d0a 0%, #4a1711 48%, #6b231b 100%);
+
+  --teal: #0f766e;
+  --teal-600: #115e59;
+  --teal-100: #e2f3f1;
+
+  --bg: #fbf7f5;
+  --surface: #ffffff;
+  --border: #f0e4e0;
+  --border-kuat: #e4cfc9;
+  --text: #2a2422;
+  --text-2: #5c514e;
+  --text-3: #a89a95;
+
+  /* Sidebar: gradasi salmon muda → merah (teks maroon gelap). */
+  --sidebar-grad: linear-gradient(180deg, #ffc1b6 0%, #fb988b 46%, #f2695e 100%);
+  --sidebar-teks: #5c1a12;
+  --sidebar-teks-2: #93362b;
+  --sidebar-garis: rgba(120, 30, 20, 0.18);
+  --sidebar-hover: rgba(255, 246, 244, 0.42);
+  --sidebar-aktif-bg: #fffaf9;
+  --sidebar-aktif-teks: #c23a2e;
+
+  --hijau: #059669;
+  --hijau-bg: #e7f6f0;
+  --merah: #dc2626;
+  --merah-bg: #fdecec;
+  --kuning: #c2710d;
+  --kuning-bg: #fdf0dc;
+  --ungu: #7c3aed;
+  --ungu-bg: #f1eafd;
+  --info: #0284c7;
+  --info-bg: #e5f3fb;
+
+  --navy: #4a2420;
+  --navy-600: #6b2f28;
+  --navy-100: #f7e7e3;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-pill: 999px;
+  --shadow: 0 1px 2px rgba(42, 36, 34, 0.05), 0 1px 3px rgba(42, 36, 34, 0.06);
+  --shadow-md: 0 2px 6px rgba(42, 36, 34, 0.06), 0 6px 18px rgba(42, 36, 34, 0.07);
+  --shadow-lg: 0 12px 36px rgba(42, 36, 34, 0.16);
+
+  --font-judul: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+  --font-teks: 'Open Sans', 'Segoe UI', system-ui, sans-serif;
+}
+
+html.dark {
+  --bg: #140b0a;
+  --surface: #1e1312;
+  --border: #33211e;
+  --border-kuat: #45302c;
+  --text: #ede0dc;
+  --text-2: #b8a49f;
+  --text-3: #85726d;
+  --brand-light: #331310;
+  --teal-100: #10302c;
+  --hijau-bg: #0c3327;
+  --merah-bg: #3a1512;
+  --kuning-bg: #33230a;
+  --ungu-bg: #261b3a;
+  --info-bg: #0c2a3d;
+  --navy-100: #2a1512;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.55);
+}
