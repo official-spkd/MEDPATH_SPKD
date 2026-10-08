@@ -1,0 +1,3 @@
+transcpg-api
+*.md
+!internal/panduan/isi/*.md

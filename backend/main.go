@@ -17,9 +17,14 @@ import (
 )
 
 func main() {
+	// ALAMAT untuk lokal; PORT disuntikkan platform hosting (Railway, Render, dll).
 	alamat := os.Getenv("ALAMAT")
 	if alamat == "" {
-		alamat = ":8080"
+		if port := os.Getenv("PORT"); port != "" {
+			alamat = ":" + port
+		} else {
+			alamat = ":8080"
+		}
 	}
 
 	st := store.NewDenganDB(sambungDB())
