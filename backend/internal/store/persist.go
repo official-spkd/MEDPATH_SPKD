@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -303,18 +304,19 @@ func (s *Store) hapusPadananSnomedDB(icd10 string) {
 	s.pool.Exec(ctx, `DELETE FROM padanan_snomed WHERE icd10=$1`, icd10)
 }
 
-// pgxBatchHelper menjalankan banyak INSERT sekaligus.
+// pgxBatchHelper mengantre banyak INSERT lalu mengirimnya sebagai satu batch dalam
+// satu transaksi: cepat untuk DB jauh (satu round-trip) dan atomik (semua atau tidak sama sekali).
 type pgxBatchHelper struct {
 	pool  *pgxpool.Pool
-	calls []func() error
-	err   error
+	batch pgx.Batch
 }
 
 func (b *pgxBatchHelper) exec(sql string, args ...any) {
-	_, err := b.pool.Exec(ctx, sql, args...)
-	if err != nil && b.err == nil {
-		b.err = err
-	}
+	b.batch.Queue(sql, args...)
 }
 
-func (b *pgxBatchHelper) flush() error { return b.err }
+func (b *pgxBatchHelper) flush() error {
+	return pgx.BeginFunc(ctx, b.pool, func(tx pgx.Tx) error {
+		return tx.SendBatch(ctx, &b.batch).Close()
+	})
+}
