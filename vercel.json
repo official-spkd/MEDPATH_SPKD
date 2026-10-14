@@ -1,6 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["sin1"],
+  "regions": [
+    "sin1"
+  ],
   "services": {
     "frontend": {
       "root": "frontend",
@@ -9,7 +11,10 @@
       "buildCommand": "npm run build",
       "outputDirectory": "dist",
       "rewrites": [
-        { "source": "/", "destination": "/index.html" }
+        {
+          "source": "/",
+          "destination": "/index.html"
+        }
       ]
     },
     "backend": {
@@ -18,17 +23,44 @@
     }
   },
   "rewrites": [
-    { "source": "/api/:path*", "destination": { "service": "backend" } },
-    { "source": "/:path*", "destination": { "service": "frontend" } }
+    {
+      "source": "/api/:path*",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/",
+      "destination": {
+        "service": "frontend",
+        "path": "/index.html"
+      }
+    },
+    {
+      "source": "/:path*",
+      "destination": {
+        "service": "frontend"
+      }
+    }
   ],
   "headers": [
     {
       "source": "/api/:path*",
-      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
     },
     {
       "source": "/assets/:path*",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ]
 }
