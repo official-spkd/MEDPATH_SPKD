@@ -16,8 +16,9 @@ Supabase Auth/Edge Functions tidak diperlukan untuk arsitektur ini.
 3. Vercel → Environment Variables: simpan `DATABASE_URL` sebagai sensitive variable
    untuk environment deployment yang sesuai. Jangan beri awalan `VITE_`.
    Preview sebaiknya memakai database uji terpisah agar tidak mengubah state produksi.
-4. Deploy branch `feat/vercel-supabase`, periksa build frontend dan Go serta health API.
-   Setelah validasi, merge ke `main` untuk deployment produksi.
+4. Deploy `main`, lalu periksa halaman utama, health API, login, dan CP Library.
+   Perubahan environment variable baru berlaku pada deployment baru; lakukan Redeploy
+   setelah memperbarui `DATABASE_URL`.
 
 `PORT` disediakan Vercel. `DEMO_IN_MEMORY` tidak berlaku ketika `VERCEL` tersedia.
 Jika database gagal, aplikasi tidak diam-diam beralih ke penyimpanan sementara.
@@ -51,6 +52,8 @@ bukan bukti bahwa aplikasi telah siap mengelola data klinis nyata.
 ## Rollback
 
 Deployment lama yang sudah Ready dapat dipulihkan lewat Instant Rollback Vercel.
+Jika opsi itu tidak tersedia, gunakan Promote pada deployment lama untuk mengembalikan
+domain produksi tanpa membangun ulang kode lama.
 Jika akan membangun ulang kode lama, kembalikan Root Directory menjadi `frontend`.
 Tidak menghapus layanan Railway saat migrasi; penghapusan/penutupan layanan dilakukan
 terpisah setelah koneksi database, API, dan penggunaan aplikasi terverifikasi.
