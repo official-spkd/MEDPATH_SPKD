@@ -5,12 +5,14 @@ import (
 	"context"
 	"errors"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/user"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"transcpg/internal/api"
 	"transcpg/internal/store"
@@ -79,7 +81,33 @@ func sambungDB() (*pgxpool.Pool, error) {
 	}
 	if err := pool.Ping(ctx); err != nil {
 		pool.Close()
-		return nil, errors.New("PostgreSQL tidak dapat dihubungi; periksa konfigurasi DATABASE_URL dan jaringan")
+		return nil, databaseError(err)
 	}
 	return pool, nil
+}
+
+// Klasifikasi tanpa mencetak DSN, password, parameter, atau pesan server mentah.
+func databaseError(err error) error {
+	var postgres *pgconn.PgError
+	if errors.As(err, &postgres) {
+		switch postgres.Code {
+		case "28P01", "28000":
+			return errors.New("PostgreSQL menolak autentikasi; periksa user dan password pada DATABASE_URL")
+		case "3D000":
+			return errors.New("Nama database pada DATABASE_URL tidak ditemukan")
+		case "53300":
+			return errors.New("Batas koneksi PostgreSQL tercapai")
+		default:
+			return errors.New("PostgreSQL menolak koneksi; SQLSTATE=" + postgres.Code)
+		}
+	}
+	var dns *net.DNSError
+	if errors.As(err, &dns) {
+		return errors.New("Hostname PostgreSQL tidak dapat di-resolve")
+	}
+	var network net.Error
+	if errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &network) && network.Timeout()) {
+		return errors.New("Koneksi PostgreSQL timeout; periksa host, port, dan network restrictions")
+	}
+	return errors.New("Koneksi PostgreSQL gagal sebelum autentikasi; periksa TLS, host, dan jaringan")
 }
