@@ -33,7 +33,7 @@ func New(s *store.Store) *Server {
 }
 
 // Handler mengembalikan http.Handler dengan CORS terpasang.
-func (s *Server) Handler() http.Handler { return cors(s.mux) }
+func (s *Server) Handler() http.Handler { return cors(http.HandlerFunc(s.transactional)) }
 
 func (s *Server) rute() {
 	// Publik
