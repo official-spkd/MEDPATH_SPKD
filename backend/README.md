@@ -5,8 +5,8 @@ Ditulis dengan **Go + `net/http`** (stdlib untuk HTTP) dan **PostgreSQL** (via `
 
 > Semua data FIKTIF (tanpa identitas pasien). State yang berubah saat runtime (status CP,
 > isi klinis, riwayat pengesahan, padanan) **disimpan di PostgreSQL**; data statis (statistik
-> severity, dokumen, master kode) digenerasi di Go. Bila DB tidak tersedia, server otomatis
-> **fallback ke in-memory** (perubahan tidak tersimpan).
+> severity, dokumen, master kode) digenerasi di Go. Bila DB tidak tersedia, startup gagal atau API mengembalikan **503**.
+> Mode memori hanya untuk lokal dengan `DEMO_IN_MEMORY=true`.
 
 ## Menjalankan
 
@@ -20,7 +20,7 @@ createdb transcpg
 
 Server memakai `DATABASE_URL`, atau default `postgres://<user>@localhost:5432/transcpg?sslmode=disable`.
 Saat pertama jalan dengan DB kosong, skema dibuat otomatis dan data demo ditanam. Restart berikutnya
-memuat state dari DB.
+memuat snapshot state dari DB per request.
 
 ### 2. Server
 
@@ -34,7 +34,7 @@ DATABASE_URL=... go run . # DB lain
 Mulai ulang data demo dari awal:
 
 ```bash
-psql -d transcpg -c "DROP TABLE IF EXISTS cp_state,cp_acuan,cp_kriteria,cp_rencana,cp_riwayat,padanan_kptl,padanan_snomed CASCADE;"
+psql -d transcpg -c "DROP TABLE IF EXISTS auth_sessions,cp_state,cp_acuan,cp_kriteria,cp_rencana,cp_riwayat,padanan_kptl,padanan_snomed CASCADE;"
 go run .   # akan menanam ulang
 ```
 
@@ -79,8 +79,8 @@ Semua akun pakai sandi **`Demo-SPKD-2026`**:
 | GET | `/panduan` | Bearer **SUPER_ADMIN** | Panduan Lengkap Super Admin (selain itu `403`) |
 | GET | `/kesehatan` | — | Health check |
 
-Autentikasi: header `Authorization: Bearer <token>`. Token sesi disimpan di memori
-(hilang saat server restart).
+Autentikasi: header `Authorization: Bearer <token>`. Hash token sesi disimpan di tabel `auth_sessions`, kedaluwarsa setelah 24 jam,
+dan logout berlaku lintas instance. Respons API memakai `Cache-Control: no-store`.
 
 ## Struktur
 
@@ -100,8 +100,28 @@ backend/
 
 ## Menuju produksi
 
-- Ganti `store` dengan PostgreSQL (mis. `pgx`), migrasi dari skema Laravel lama di `_legacy/backend-laravel`.
+- Migrasi pengguna dan data nyata sesuai kebutuhan operasional; data awal masih demo.
 - Hash password (bcrypt/argon2) — demo ini memakai plaintext.
-- Token JWT ber-expiry atau sesi di DB, bukan map memori.
+- Jadwalkan pembersihan sesi kedaluwarsa jika jumlah pengguna meningkat.
 - Port logika domain CPG (aturan status, pengesahan 4 tahap, impor klaim, pembangun library) dari `_legacy/backend-laravel/app/Cpg`.
 - Batasi `Access-Control-Allow-Origin` ke origin frontend produksi.
+
+## Konsistensi di Vercel
+
+`Store.Request` membuat snapshot terpisah dalam transaksi untuk setiap permintaan.
+Pembaca memakai repeatable-read. Penulis memakai advisory lock transaksi PostgreSQL,
+sehingga validasi status/peran, penentuan ID, perubahan CP, dan audit tidak berlomba
+antar-instance. Respons sukses dikirim setelah commit; kegagalan SQL menjadi 503.
+Untuk skala data yang lebih besar, ganti pemuatan seluruh state dengan query per objek
+serta lock per CP. Saat ini pendekatan ini mempertahankan seluruh logika domain demo.
+
+Koneksi memakai pgx mode `exec` (tanpa prepared statement bernama), maksimum 3 koneksi
+per instance dan idle 30 detik, sesuai transaction pooler Supabase.
+
+Pengujian integrasi membuat lalu menghapus schema acak di database uji:
+
+```bash
+TEST_DATABASE_URL='postgres://localhost/medpath_test?sslmode=disable' go test -race ./...
+```
+
+Jangan arahkan `TEST_DATABASE_URL` ke database produksi.

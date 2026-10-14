@@ -40,9 +40,20 @@ Buka http://localhost:5173 → klik salah satu chip akun demo (sandi `Demo-SPKD-
 - ✅ **Panduan Lengkap Super Admin** (Pengaturan → kartu ke-4): 13 bab dokumentasi teknis,
   ditulis di `backend/internal/panduan/isi/*.md`, hanya bisa diakses SUPER_ADMIN
 - ✅ **PostgreSQL** menyimpan state (status CP, isi klinis, riwayat, padanan) — bertahan lintas restart;
-  fallback in-memory bila DB mati
+  sesi lintas instance, transaksi atomik, dan respons gagal bila DB mati
 
 Butuh PostgreSQL (`brew install postgresql@17 && brew services start postgresql@17 && createdb transcpg`).
 Lihat `backend/README.md`.
 
 `_legacy/` berisi implementasi lama (Laravel + Nuxt) sebagai sumber porting logika domain CPG.
+
+## Deployment Vercel + Supabase
+
+Konfigurasi root `vercel.json` menjalankan **dua Services dalam satu proyek Vercel**:
+Vue di `/`, Go di `/api/*`. PostgreSQL memakai Supabase; Railway tidak diperlukan.
+Root Directory proyek Vercel harus **root repository** (kosong), bukan `frontend`.
+Go runtime dan Services Vercel masih Beta. Lihat [panduan deployment](docs/deployment.md)
+untuk environment, validasi, dan rollback.
+
+Migrasi hosting ini tetap memakai akun dan data demo. Jangan gunakan untuk data pasien
+sebelum autentikasi pengguna nyata dan proses operasional produksi disiapkan.

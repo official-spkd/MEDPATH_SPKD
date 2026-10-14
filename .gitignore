@@ -12,6 +12,9 @@ backend/transcpg-api
 
 # Env & secrets
 .env
+.env.*
+!.env.example
+.vercel/
 *.local
 
 # Arsip stack lama (Laravel + Nuxt)
