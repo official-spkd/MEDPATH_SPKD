@@ -113,7 +113,8 @@ const hasil = computed(() =>
 }
 .cari {
   flex: 1;
-  min-width: 220px;
+  min-width: min(220px, 100%);
+  max-width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -127,6 +128,8 @@ const hasil = computed(() =>
   color: var(--text-3);
 }
 .cari input {
+  min-width: 0;
+  width: 100%;
   flex: 1;
   border: none;
   outline: none;

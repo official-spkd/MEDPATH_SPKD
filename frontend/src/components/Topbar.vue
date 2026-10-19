@@ -73,9 +73,9 @@ const judul = computed(() => (route.meta.judul as string) ?? 'MedPath')
 @media (max-width: 760px) {
   .menu-mobile { display: grid !important; }
   .topbar { height: auto !important; min-height: 64px; padding: 10px !important; gap: 6px !important; flex-wrap: wrap; }
-  .kiri { flex: 1; min-width: 0; }
+  .kiri { flex: 1 1 100%; min-width: 0; }
   .brand, .sep, .avatar-btn { display: none !important; }
-  .kanan { flex-wrap: wrap; }
+  .kanan { flex-wrap: wrap; width: 100%; justify-content: flex-end; }
   .filter { max-width: 150px; }
   .cari { display: flex !important; order: 3; max-width: none !important; width: 100%; flex-basis: 100% !important; }
   .cari input { min-width: 0; width: 100%; }

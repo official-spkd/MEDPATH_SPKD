@@ -24,7 +24,9 @@ defineProps<{ judul: string; sub?: string; demo?: boolean }>()
   flex-wrap: wrap;
   margin-bottom: 20px;
 }
+.ph > div { min-width: 0; max-width: 100%; }
 .baris {
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   gap: 12px;

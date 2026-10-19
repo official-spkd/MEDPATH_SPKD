@@ -53,6 +53,7 @@ onMounted(muatAntrean)
   flex-direction: column;
 }
 .isi {
+  min-width: 0;
   flex: 1;
   padding: 28px 32px 48px;
   max-width: 1500px;
