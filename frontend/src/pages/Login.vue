@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Network, ShieldCheck, Sparkles, CircleAlert } from 'lucide-vue-next'
 import { useAuth } from '@/stores/auth'
@@ -30,18 +30,8 @@ async function kirim() {
   }
 }
 
-const akunDemo = [
-  { label: 'Super Admin', email: 'super_admin@demo.local' },
-  { label: 'Tim CP', email: 'tim_cp@demo.local' },
-  { label: 'DPJP', email: 'dpjp@demo.local' },
-  { label: 'Komite Medik', email: 'komite_medik@demo.local' },
-  { label: 'Direktur', email: 'direktur@demo.local' },
-]
-function isiDemo(email: string) {
-  form.email = email
-  form.password = 'Demo-SPKD-2026'
-  kirim()
-}
+const DemoLogin = import.meta.env.DEV ? defineAsyncComponent(() => import('@/components/DemoLogin.vue')) : null
+function isiDemo(email: string, password: string) { form.email=email; form.password=password; kirim() }
 
 const pilar = [
   { icon: Network, teks: 'CP disusun dari pola klaim INA-CBG riil & acuan PNPK/PPK' },
@@ -50,7 +40,7 @@ const pilar = [
 ]
 const statistik = [
   { n: '4', l: 'Tahap pengesahan' },
-  { n: '15', l: 'Peran RBAC' },
+  { n: '10', l: 'Peran RBAC' },
   { n: 'INA-CBG', l: 'Basis data klaim' },
   { n: '100%', l: 'Audit trail' },
 ]
@@ -126,10 +116,7 @@ const statistik = [
           </button>
         </form>
 
-        <p class="demo-ket">Akun demo (klik untuk masuk) — sandi <strong>Demo-SPKD-2026</strong></p>
-        <div class="chips">
-          <button v-for="a in akunDemo" :key="a.email" class="chip" @click="isiDemo(a.email)">{{ a.label }}</button>
-        </div>
+        <component :is="DemoLogin" v-if="DemoLogin" @pilih="isiDemo" />
       </div>
     </section>
   </div>

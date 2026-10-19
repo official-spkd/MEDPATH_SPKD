@@ -71,6 +71,8 @@ var kptlMaster = []kodeMaster{
 	{"KPTL-08", "Terapi inhalasi/nebulisasi", true},
 	{"KPTL-09", "Pemasangan kateter vena sentral", true},
 	{"KPTL-10", "CT scan kepala tanpa kontras", true},
+	{"KPTL-11", "Infus nutrisi parenteral", true},
+	{"KPTL-12", "Kolonoskopi", true},
 }
 
 var snomedMaster = []kodeMaster{
@@ -214,6 +216,16 @@ func (s *Store) SimpanKptl(u *User, icd9cm, kptl string) error {
 	if !bolehPetaKode(u.Peran) {
 		return errors.New("Peran Anda hanya dapat melihat padanan kode.")
 	}
+	known := false
+	for _, p := range prosedurKlaim {
+		if p.ICD9CM == icd9cm {
+			known = true
+			break
+		}
+	}
+	if !known {
+		return errors.New("Kode ICD-9-CM tidak ada di daftar prosedur.")
+	}
 	if deskMaster(kptlMaster, kptl) == "" {
 		return errors.New("Kode KPTL tidak ada di master.")
 	}
@@ -239,6 +251,16 @@ func (s *Store) HapusKptl(u *User, icd9cm string) error {
 func (s *Store) SimpanSnomed(u *User, icd10, snomed string) error {
 	if !bolehPetaKode(u.Peran) {
 		return errors.New("Peran Anda hanya dapat melihat padanan kode.")
+	}
+	known := false
+	for _, dx := range diagnosisKlaim {
+		if dx.ICD10 == icd10 {
+			known = true
+			break
+		}
+	}
+	if !known {
+		return errors.New("Kode ICD-10 tidak ada di daftar diagnosis.")
 	}
 	for _, k := range snomedMaster {
 		if k.Kode == snomed && !k.Aktif {
@@ -349,9 +371,14 @@ func (s *Store) UsulanKptl(icd9cm string) []kodeMasterJSON {
 
 // UsulanSnomed memberi saran konsep SNOMED untuk sebuah diagnosis ICD-10.
 func (s *Store) UsulanSnomed(icd10 string) []kodeMasterJSON {
+	// Istilah ambigu tidak boleh dipadankan hanya karena satu kata sama.
+	if icd10 == "I63.9" {
+		return []kodeMasterJSON{}
+	}
 	for _, dx := range diagnosisKlaim {
 		if dx.ICD10 == icd10 {
-			return usulanKode(dx.Deskripsi, snomedMaster)
+			nama := strings.ReplaceAll(dx.Deskripsi, "PPOK", "Penyakit paru obstruktif kronik")
+			return usulanKode(nama, snomedMaster)
 		}
 	}
 	return []kodeMasterJSON{}

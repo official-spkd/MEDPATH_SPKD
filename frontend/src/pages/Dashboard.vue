@@ -81,12 +81,12 @@ const maxButir = computed(() => Math.max(1, ...Object.values(d.value?.butir_per_
     <div class="head">
       <div>
         <div class="judul-baris">
-          <h1>Dashboard Eksekutif</h1>
+          <h1>Dasbor Eksekutif</h1>
           <span class="badge data-demo"><span class="titik" /> Data Demo</span>
         </div>
         <p class="sapaan">{{ sapaan() }}, {{ auth.pengguna?.nama?.replace(/\s*\(.*\)/, '') }} — kemajuan penyusunan Clinical Pathway dalam 30 detik.</p>
       </div>
-      <router-link to="/library" class="btn btn-outline"><Library :size="16" /> Buka CP Library</router-link>
+      <router-link to="/library" class="btn btn-outline"><Library :size="16" /> Buka Pustaka CP</router-link>
     </div>
 
     <div v-if="galat" class="galat-box"><TriangleAlert :size="18" /> {{ galat }}</div>
@@ -100,7 +100,7 @@ const maxButir = computed(() => Math.max(1, ...Object.values(d.value?.butir_per_
           <Gauge :skor="d.readiness.skor" />
         </div>
         <div class="hero-mid">
-          <p class="hero-kap">MedPath Readiness Index</p>
+          <p class="hero-kap">Indeks Kesiapan MedPath</p>
           <p class="hero-label">{{ d.readiness.label }}</p>
           <div class="hero-stats">
             <div class="hs"><span>Total CP</span><strong class="angka">{{ angka(d.kartu.jumlah_cp) }}</strong></div>

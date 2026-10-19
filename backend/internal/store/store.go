@@ -27,6 +27,8 @@ type User struct {
 
 // Store memegang seluruh data demo + sesi token aktif.
 type Store struct {
+	klaim         []Klaim
+	administrasi  Administrasi
 	mu            sync.RWMutex
 	users         []*User
 	tokens        map[string]int           // token -> user id
@@ -74,7 +76,7 @@ func newBase() *Store {
 		{"TIM_CP", "Tim CP"},
 		{"DPJP", "DPJP"},
 		{"APOTEKER", "Apoteker"},
-		{"KOMITE_MEDIK", "KSM/Komite Medik"},
+		{"KOMITE_MEDIK", "Komite Medik"},
 		{"DIREKTUR", "Direktur"},
 	}
 	for i, p := range seed {
@@ -84,7 +86,7 @@ func newBase() *Store {
 			Email:      lower(p.peran) + "@demo.local",
 			Peran:      p.peran,
 			PeranLabel: p.label,
-			Password:   DemoPassword,
+			Password:   demoPasswordHash(),
 			Aktif:      true,
 		})
 	}
@@ -104,6 +106,7 @@ func newBase() *Store {
 		}
 	}
 	s.seedPadanan()
+	s.adminAwal()
 	return s
 }
 
@@ -112,7 +115,7 @@ func (s *Store) Autentikasi(email, password string) (*User, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, u := range s.users {
-		if u.Email == email && u.Password == password && u.Aktif {
+		if u.Email == email && u.Aktif && cocokPassword(u.Password, password) {
 			return u, true
 		}
 	}
@@ -171,7 +174,7 @@ func (s *Store) user(id int) (*User, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, u := range s.users {
-		if u.ID == id {
+		if u.ID == id && u.Aktif {
 			return u, true
 		}
 	}

@@ -110,4 +110,4 @@ Contoh: Direktur menekan **"Sahkan jadi Aktif"** di halaman Detail CP.
 
 - **Sudah nyata:** alur pengesahan, aturan peran, 7 syarat, edit isi klinis, padanan, persistensi PostgreSQL.
 - **Masih data demo/sintetis:** daftar CP & statistiknya, dokumen panduan, master kode, tren dashboard, angka evaluasi.
-- **Belum ada:** impor klaim INA-CBG, pembangun library otomatis, API integrasi TransCPR-X, hashing password, token sesi persisten. Detailnya di bab *Keamanan & RBAC* dan *Deploy & Operasional*.
+- **Belum ada:** impor klaim INA-CBG, pembangun library otomatis, API integrasi TransCPR-X, provisioning pengguna produksi. Detailnya di bab *Keamanan & RBAC* dan *Deploy & Operasional*.

@@ -161,6 +161,54 @@ func TestPostgresAcrossInstances(t *testing.T) {
 		t.Fatal("transition did not advance")
 	}
 
+	// Administrative state and newly provisioned users survive instance boundaries.
+	for _, tc := range []struct {
+		method, path, body string
+		status             int
+	}{
+		{"PUT", "/admin/profil", `{"nama":"RS Uji Persistensi","tipe":"B","kepemilikan":"Pemerintah","regional":"1","kelas":"1"}`, 200},
+		{"POST", "/dokumen-panduan", `{"nama":"Dokumen Uji Persistensi","penerbit":"QA","tahun":2026,"sumber":"PPK_RS","butir":["Butir pengujian, bukan pedoman klinis"]}`, 201},
+		{"POST", "/admin/pengguna", `{"nama":"Administrator Uji","email":"admin@example.test","peran":"SUPER_ADMIN","password":"integration-fixture-only"}`, 200},
+	} {
+		if r := request(a.URL, tc.method, tc.path, tc.body); r.Code != tc.status {
+			t.Fatalf("administration %s: %d %s", tc.path, r.Code, r.Body.String())
+		}
+	}
+	if r := request(b.URL, "GET", "/admin", ""); r.Code != 200 || !strings.Contains(r.Body.String(), "RS Uji Persistensi") || !strings.Contains(r.Body.String(), "admin@example.test") || strings.Contains(r.Body.String(), "password") {
+		t.Fatal("administration not persistent or secret exposed")
+	}
+	if r := request(b.URL, "GET", "/dokumen-panduan", ""); r.Code != 200 || !strings.Contains(r.Body.String(), "Dokumen Uji Persistensi") {
+		t.Fatal("document not persistent")
+	}
+	var encoded string
+	if err := pool.QueryRow(ctx, "SELECT password_hash FROM app_users WHERE email='admin@example.test'").Scan(&encoded); err != nil || !strings.HasPrefix(encoded, "pbkdf2-sha256$") {
+		t.Fatal("password not hashed")
+	}
+	loginRecord := request(b.URL, "POST", "/auth/login", `{"email":"admin@example.test","password":"integration-fixture-only"}`)
+	if loginRecord.Code != 200 {
+		t.Fatalf("new account login: %d", loginRecord.Code)
+	}
+	if r := request(a.URL, "POST", "/admin/nonaktifkan-demo", ""); r.Code != 422 {
+		t.Fatal("demo can retire itself and lock owner out")
+	}
+	keyRecord := request(a.URL, "POST", "/admin/kunci", `{"nama":"Integration fixture"}`)
+	var key struct {
+		Kunci string `json:"kunci"`
+	}
+	if keyRecord.Code != 201 || json.Unmarshal(keyRecord.Body.Bytes(), &key) != nil || key.Kunci == "" {
+		t.Fatal("key creation failed")
+	}
+	keyReq := httptest.NewRequest("GET", "/api/v1/integrasi/cp-aktif", nil)
+	keyReq.Header.Set("Authorization", "Bearer "+key.Kunci)
+	keyRes := httptest.NewRecorder()
+	New(stores[1]).Handler().ServeHTTP(keyRes, keyReq)
+	if keyRes.Code != 200 {
+		t.Fatal("integration key not persistent")
+	}
+	if r := request(b.URL, "GET", "/admin", ""); strings.Contains(r.Body.String(), key.Kunci) || strings.Contains(r.Body.String(), `"hash"`) {
+		t.Fatal("integration secret exposed")
+	}
+
 	// Logout and expiry apply to every warm or newly started instance.
 	if r := request(b.URL, "POST", "/auth/logout", ""); r.Code != 200 {
 		t.Fatal("logout failed")

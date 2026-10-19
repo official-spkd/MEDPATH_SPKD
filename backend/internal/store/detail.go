@@ -96,10 +96,10 @@ var templateRencana = []Rencana{
 	{Jenis: "LAB", Kode: "LOINC-2160", Nama: "Darah lengkap", Frekuensi: "1x/hari", Rute: "—", Dosis: "—"},
 	{Jenis: "OBAT", Kode: "KFA-0101", Nama: "Infus kristaloid NaCl 0,9%", Dosis: "500 mL", Rute: "IV", Frekuensi: "/8 jam"},
 	{Jenis: "OBAT", Kode: "KFA-0220", Nama: "Analgetik parasetamol", Dosis: "1 g", Rute: "IV", Frekuensi: "/8 jam"},
-	{Jenis: "PROSEDUR", Kode: "ICD9-8703", Nama: "Foto toraks", Dosis: "—", Rute: "—", Frekuensi: "1x"},
+	{Jenis: "PROSEDUR", Kode: "ICD9-8744", Nama: "Foto toraks", Dosis: "—", Rute: "—", Frekuensi: "1x"},
 	{Jenis: "LAB", Kode: "LOINC-2345", Nama: "Elektrolit serum", Dosis: "—", Rute: "—", Frekuensi: "1x/hari"},
 	{Jenis: "OBAT", Kode: "KFA-0455", Nama: "Antibiotik seftriakson", Dosis: "2 g", Rute: "IV", Frekuensi: "/24 jam"},
-	{Jenis: "TINDAKAN", Kode: "ICD9-9604", Nama: "Pemasangan kateter IV", Dosis: "—", Rute: "—", Frekuensi: "1x"},
+	{Jenis: "PROSEDUR", Kode: "ICD9-8952", Nama: "Elektrokardiografi (EKG)", Dosis: "—", Rute: "—", Frekuensi: "1x"},
 	{Jenis: "OBAT", Kode: "KFA-0612", Nama: "Antiemetik ondansetron", Dosis: "4 mg", Rute: "IV", Frekuensi: "/8 jam"},
 }
 

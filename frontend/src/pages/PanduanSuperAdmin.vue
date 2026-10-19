@@ -478,7 +478,7 @@ const unduhSemua = () =>
   font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
   font-size: 12.5px;
   background: var(--brand-light);
-  color: var(--brand-gelap);
+  color: var(--text);
   padding: 1px 6px;
   border-radius: 5px;
 }

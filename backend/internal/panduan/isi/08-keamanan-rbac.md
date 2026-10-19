@@ -38,23 +38,23 @@ Frontend juga menyembunyikan menu/tombol (guard `meta.admin`, `meta.superAdmin`,
 
 ## Alur login & sesi
 
-1. `POST /auth/login` mencocokkan email + sandi dengan daftar user di memori.
-2. Bila cocok, server membuat token acak 24 byte (`crypto/rand`, hex) dan menyimpannya di peta `tokens map[string]int` (token → id user).
+1. `POST /auth/login` memverifikasi email dan hash sandi terhadap snapshot pengguna aktif dari database.
+2. Bila cocok, server membuat token acak 24 byte (`crypto/rand`, hex) dan menyimpan hash token dan masa berlaku 24 jam di `auth_sessions`. Demo lokal eksplisit memakai peta memori.
 3. Frontend menyimpan token di `localStorage` dan mengirimnya sebagai `Bearer` di setiap request.
-4. `POST /auth/logout` menghapus token dari peta.
+4. `POST /auth/logout` mencabut sesi dari penyimpanan sehingga berlaku lintas instance.
 
 ## Keterbatasan saat ini (WAJIB dibaca)
 
 | # | Kondisi sekarang | Risiko | Perbaikan |
 |---|---|---|---|
-| 1 | Sandi akun disimpan **polos** di kode (`Demo-SPKD-2026`) | siapa pun yang membaca repo tahu sandinya | tabel `users` + `bcrypt`/`argon2id`; hapus sandi demo dari build produksi |
-| 2 | Token sesi hanya di **memori**, tanpa kedaluwarsa | sesi hilang tiap restart; token yang bocor berlaku selamanya selama server hidup | tabel `sesi` dengan `expires_at`, atau JWT berumur pendek + refresh |
+| 1 | Hash sandi PBKDF2-HMAC-SHA256, salt acak, 600.000 iterasi | akun demo tetap dikenal sampai dinonaktifkan | buat Super Admin non-demo lalu nonaktifkan demo dari akun tersebut |
+| 2 | Sesi PostgreSQL persisten | hash token, kedaluwarsa 24 jam, logout lintas instance | bersihkan sesi kedaluwarsa secara terjadwal |
 | 3 | Token di `localStorage` | rentan dicuri jika ada XSS | pertimbangkan cookie `HttpOnly; Secure; SameSite=Strict` |
-| 4 | CORS `Access-Control-Allow-Origin: *` | situs lain bisa memanggil API (meski tetap butuh token) | batasi ke origin frontend produksi |
+| 4 | CORS memakai daftar origin eksplisit | origin lain tidak mendapat izin CORS | atur ALLOWED_ORIGINS untuk frontend lintas origin |
 | 5 | Tidak ada pembatasan laju login | tebak-sandi tanpa batas | rate limit per IP/email, kunci sementara |
 | 6 | Tidak ada HTTPS di server Go | token lewat jalur polos jika diekspos langsung | pasang di belakang reverse proxy TLS (Caddy/Nginx) |
-| 7 | Alasan KEMBALIKAN hanya divalidasi di UI | klien lain bisa mengembalikan tanpa alasan | validasi di `Transisi` |
-| 8 | Write-through mengabaikan galat DB | audit trail bisa tidak tersimpan tanpa ketahuan | kembalikan galat & batalkan perubahan memori |
+| 7 | Alasan KEMBALIKAN divalidasi server setelah trim | alasan kosong ditolak 422 | pertahankan pengujian regresi |
+| 8 | Transaksi per request | perubahan dan audit commit bersama | kegagalan database menjadi 503 |
 
 ## Data pasien
 
@@ -63,16 +63,17 @@ Seluruh data di MedPath saat ini **fiktif dan tanpa identitas pasien**. CP beker
 ## Rahasia & repositori
 
 - `.env` dan file `*.local` di-*ignore* git.
-- Repo `official-spkd/MEDPATH_SPKD` bersifat **private**.
-- `gh` CLI di mesin pengembang tidak login sebagai official-spkd; push memakai Personal Access Token milik official-spkd yang ditempel sendiri oleh pemilik akun saat diminta git. Cabut token yang tidak dipakai lagi di *Settings → Developer settings → Personal access tokens*.
+- Repo `official-spkd/MEDPATH_SPKD` bersifat **public**.
+- Verifikasi akun GitHub aktif dan izin repository sebelum push. Jangan simpan token dalam kode atau log.
 
 ## Daftar periksa sebelum produksi
 
-- [ ] Sandi di-hash, sandi demo dihapus
-- [ ] Sesi persisten dengan kedaluwarsa
+- [x] Sandi di-hash; form login produksi tidak menampilkan akun demo
+- [ ] Akun demo dinonaktifkan setelah akses Super Admin non-demo terverifikasi
+- [x] Sesi persisten dengan kedaluwarsa
 - [ ] CORS dibatasi, HTTPS aktif
 - [ ] Rate limit login
-- [ ] Galat write-through ditangani
-- [ ] Validasi alasan KEMBALIKAN di backend
+- [x] Galat penyimpanan ditangani dengan rollback
+- [x] Validasi alasan KEMBALIKAN di backend
 - [ ] Log audit akses (siapa membuka apa), bukan hanya transisi
 - [ ] Backup PostgreSQL terjadwal & pernah diuji restore

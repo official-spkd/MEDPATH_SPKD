@@ -3,6 +3,7 @@ package store
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -90,6 +91,9 @@ func aksiUntuk(peran, status string) []aturanTransisi {
 
 // peranDitunggu: label peran yang ditunggu tindakannya pada status ini.
 func peranDitunggu(status string) []string {
+	if status == "REVISI" {
+		return []string{"Tim CP"}
+	}
 	out := []string{}
 	if !sedangDiproses(status) {
 		return out
@@ -162,7 +166,7 @@ func syarat(kode, judul string, menghambat bool, pj string, kurang []string) Sya
 	return Syarat{kode, judul, menghambat, len(kurang) == 0, pj, kurang}
 }
 
-func periksaSyarat(c CP, d *DetailExtra) []Syarat {
+func (s *Store) periksaSyarat(c CP, d *DetailExtra) []Syarat {
 	// ACUAN_CP
 	var kurangAcuan []string
 	if len(d.Acuan) == 0 {
@@ -182,12 +186,26 @@ func periksaSyarat(c CP, d *DetailExtra) []Syarat {
 	// ACUAN_SUB_CP
 	var kurangSub []string
 	for _, s := range d.SubCP {
-		if !s.AdaAcuan {
+		if len(d.Acuan) == 0 {
 			kurangSub = append(kurangSub, fmt.Sprintf("Sub-CP %s belum punya acuan.", s.ICD10))
 		}
 	}
-	// PADANAN_KPTL / TARIF / SNOMED / ICD10 — demo: terpenuhi bila isi klinis sudah ada
+	// Periksa prosedur yang benar-benar tercantum pada rencana CP.
 	var kurangKptl, kurangTarif, kurangSnomed []string
+	seen := map[string]bool{}
+	for _, r := range d.Rencana {
+		if !strings.HasPrefix(r.Kode, "ICD9-") {
+			continue
+		}
+		kode := strings.TrimPrefix(r.Kode, "ICD9-")
+		if !strings.Contains(kode, ".") && len(kode) > 2 {
+			kode = kode[:2] + "." + kode[2:]
+		}
+		if _, ok := s.padananKptl[kode]; !ok && !seen[kode] {
+			kurangKptl = append(kurangKptl, "Prosedur "+kode+" belum punya padanan KPTL.")
+			seen[kode] = true
+		}
+	}
 	if c.JumlahRencana == 0 {
 		kurangKptl = []string{"Prosedur belum punya padanan KPTL."}
 		kurangTarif = []string{"Tarif INA-CBG tiap severity belum lengkap."}
@@ -237,14 +255,19 @@ func (s *Store) Detail(kode, peran string) (*CPDetail, bool) {
 	if d == nil {
 		d = &DetailExtra{}
 	}
+	// Acuan tingkat CP berlaku untuk seluruh sub-CP; tampilkan pewarisan itu.
+	sub := append([]SubCP{}, d.SubCP...)
+	for i := range sub {
+		sub[i].AdaAcuan = len(d.Acuan) > 0
+	}
 	return &CPDetail{
 		CP:                c,
 		Severity:          d.Severity,
-		SubCP:             d.SubCP,
+		SubCP:             sub,
 		Acuan:             d.Acuan,
 		Kriteria:          d.Kriteria,
 		Rencana:           d.Rencana,
-		Syarat:            periksaSyarat(c, d),
+		Syarat:            s.periksaSyarat(c, d),
 		AksiTersedia:      aksiUntuk(peran, c.Status),
 		MenungguPeranList: peranDitunggu(c.Status),
 		BolehUbah: BolehUbah{
@@ -290,9 +313,13 @@ func (s *Store) Transisi(kode, aksi string, u *User, alasan string) (*CP, error)
 	if !berperan(u.Peran, cocok.Peran) {
 		return nil, errors.New("Peran Anda tidak berwenang melakukan aksi ini.")
 	}
+	alasan = strings.TrimSpace(alasan)
+	if aksi == "KEMBALIKAN" && alasan == "" {
+		return nil, errors.New("Alasan pengembalian wajib diisi.")
+	}
 	// Syarat menghambat harus terpenuhi sebelum AKTIF.
 	if cocok.Ke == "AKTIF" {
-		for _, sy := range periksaSyarat(*cp, s.detail[kode]) {
+		for _, sy := range s.periksaSyarat(*cp, s.detail[kode]) {
 			if sy.Menghambat && !sy.Terpenuhi {
 				return nil, fmt.Errorf("Belum bisa disahkan: %s belum terpenuhi.", sy.Judul)
 			}
@@ -337,7 +364,7 @@ func bangunRiwayatAwal(c CP) []RiwayatItem {
 	}
 	// Berapa langkah yang sudah terjadi sampai status sekarang.
 	sampai := map[string]int{
-		"DRAFT": 0, "REVISI": 0, "REVIEW_TIM_CP": 1,
+		"DRAFT": 0, "REVISI": 1, "REVIEW_TIM_CP": 1,
 		"REVIEW_KOMITE": 2, "MENUNGGU_DIREKTUR": 3, "AKTIF": 4,
 	}[c.Status]
 

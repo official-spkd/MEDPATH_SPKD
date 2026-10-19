@@ -1,12 +1,23 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { Search, Bell, Moon, Sun, ChevronDown } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Search, Bell, Moon, Sun, ChevronDown, Menu } from 'lucide-vue-next'
+import { useFilter } from '@/stores/filter'
 import { useTema } from '@/stores/tema'
 import { useAuth } from '@/stores/auth'
 import { inisial } from '@/lib/format'
 
 const route = useRoute()
+const router = useRouter()
+const filter = useFilter()
+const cari = ref('')
+defineEmits<{ menu: [] }>()
+function cariGlobal() {
+  const q = cari.value.trim()
+  if (!q) return
+  if (/^[A-Z]-\d-\d{2}$/i.test(q)) router.push(`/library/${q.toUpperCase()}`)
+  else router.push({ path: '/pencarian', query: { q } })
+}
 const tema = useTema()
 const auth = useAuth()
 
@@ -15,6 +26,7 @@ const judul = computed(() => (route.meta.judul as string) ?? 'MedPath')
 
 <template>
   <header class="topbar">
+    <button class="ikon-btn menu-mobile" aria-label="Buka menu navigasi" @click="$emit('menu')"><Menu :size="20" /></button>
     <div class="kiri">
       <span class="brand">MedPath</span>
       <span class="sep">/</span>
@@ -23,19 +35,19 @@ const judul = computed(() => (route.meta.judul as string) ?? 'MedPath')
 
     <div class="cari">
       <Search :size="16" class="cari-ikon" />
-      <input type="text" placeholder="Cari CP, kode INA-CBG, dokumen…" />
+      <input v-model="cari" aria-label="Pencarian global" type="search" placeholder="Cari CP, kode INA-CBG, dokumen…" @keydown.enter="cariGlobal" />
       <kbd>Ctrl K</kbd>
     </div>
 
     <div class="kanan">
-      <select class="filter">
-        <option>Semua RS</option>
-        <option>RSUD Demo SPKD</option>
+      <select v-model="filter.rumahSakit" class="filter" aria-label="Rumah sakit">
+        <option value="">Semua RS</option>
+        <option value="RSUD Demo SPKD">RSUD Demo SPKD</option>
       </select>
-      <select class="filter sembunyi-kecil">
-        <option>Semua Layanan</option>
-        <option>Rawat Inap</option>
-        <option>Rawat Jalan</option>
+      <select v-model="filter.layanan" class="filter sembunyi-kecil" aria-label="Layanan">
+        <option value="">Semua Layanan</option>
+        <option value="Rawat Inap">Rawat Inap</option>
+        <option value="Rawat Jalan">Rawat Jalan</option>
       </select>
 
       <button class="ikon-btn" :title="tema.gelap ? 'Mode terang' : 'Mode gelap'" @click="tema.ganti()">
@@ -57,6 +69,17 @@ const judul = computed(() => (route.meta.judul as string) ?? 'MedPath')
 </template>
 
 <style scoped>
+.menu-mobile { display: none !important; }
+@media (max-width: 760px) {
+  .menu-mobile { display: grid !important; }
+  .topbar { height: auto !important; min-height: 64px; padding: 10px !important; gap: 6px !important; flex-wrap: wrap; }
+  .kiri { flex: 1; min-width: 0; }
+  .brand, .sep, .avatar-btn { display: none !important; }
+  .kanan { flex-wrap: wrap; }
+  .filter { max-width: 150px; }
+  .cari { display: flex !important; order: 3; max-width: none !important; width: 100%; flex-basis: 100% !important; }
+  .cari input { min-width: 0; width: 100%; }
+}
 .topbar {
   height: 64px;
   flex-shrink: 0;

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"os"
 	"strings"
 
 	"transcpg/internal/store"
@@ -57,11 +58,29 @@ func userDari(r *http.Request) *store.User {
 // cors mengizinkan frontend (dev) mengakses API lintas-origin.
 func cors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Add("Vary", "Origin")
+		origin := r.Header.Get("Origin")
+		allowed := false
+		origins := os.Getenv("ALLOWED_ORIGINS")
+		if origins == "" && os.Getenv("VERCEL") == "" {
+			origins = "http://localhost:5173,http://localhost:4173"
+		}
+		for _, candidate := range strings.Split(origins, ",") {
+			if origin != "" && origin == strings.TrimSpace(candidate) {
+				allowed = true
+			}
+		}
+		if allowed {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 		if r.Method == http.MethodOptions {
+			if origin != "" && !allowed {
+				tulisGalat(w, http.StatusForbidden, "Origin tidak diizinkan.")
+				return
+			}
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}

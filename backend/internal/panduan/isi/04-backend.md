@@ -34,7 +34,7 @@ s := &http.Server{
 s.ListenAndServe()
 ```
 
-`sambungDB()` membuat `pgxpool` lalu `Ping` dengan batas waktu 5 detik. Bila gagal, ia mengembalikan `nil` dan server lanjut **in-memory**. `NewDenganDB` pun begitu: bila migrasi/seed/load gagal, ia mencatat log dan memakai data memori.
+`sambungDB()` membuat pool lalu melakukan Ping dengan batas waktu 8 detik. Kegagalan koneksi atau inisialisasi menghentikan startup. Setiap request memakai snapshot transaksi; kegagalan database saat request menghasilkan 503 dan perubahan dibatalkan. Mode `DEMO_IN_MEMORY=true` hanya untuk demo lokal.
 
 ## Router (`api.go`)
 
@@ -85,7 +85,7 @@ Aturan penting:
 | Jenis | Contoh | Sumber kebenaran |
 |---|---|---|
 | Statis (digenerasi ulang tiap start) | statistik severity, sub-CP, daftar dokumen, master KPTL/SNOMED, prosedur & diagnosis klaim | kode Go |
-| Berubah saat dipakai | status CP, acuan, kriteria, rencana, riwayat, padanan | **PostgreSQL** (dimuat ke memori saat start) |
+| Berubah saat dipakai | status CP, acuan, kriteria, rencana, riwayat, padanan | **PostgreSQL** (snapshot terpisah per request) |
 
 Detail mekanismenya di bab *Database & Persistensi*.
 

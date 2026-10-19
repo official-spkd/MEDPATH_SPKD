@@ -1,6 +1,11 @@
 package store
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
+
+var ErrItemTidakDitemukan = errors.New("Item tidak ditemukan.")
 
 var errTerkunci = errors.New("Isi CP terkunci pada status ini atau peran Anda tidak berwenang.")
 
@@ -39,14 +44,19 @@ func (s *Store) TambahAcuan(kode string, u *User, dokumenID int, catatan string)
 		return errTerkunci
 	}
 	var dk *Dokumen
-	for i := range daftarDokumen {
-		if daftarDokumen[i].ID == dokumenID {
-			dk = &daftarDokumen[i]
+	for i := range s.administrasi.Dokumen {
+		if s.administrasi.Dokumen[i].ID == dokumenID {
+			dk = &s.administrasi.Dokumen[i]
 			break
 		}
 	}
 	if dk == nil {
 		return errors.New("Dokumen panduan tidak ditemukan.")
+	}
+	for _, a := range d.Acuan {
+		if a.Dokumen == dk.Nama && a.Tahun == dk.Tahun {
+			return errors.New("Dokumen ini sudah menjadi acuan CP.")
+		}
 	}
 	a := Acuan{
 		ID:      maxID(d.Acuan, func(a Acuan) int { return a.ID }),
@@ -70,6 +80,9 @@ func (s *Store) HapusAcuan(kode string, u *User, id int) error {
 	if !bolehUbah(u.Peran, cp.Status, ISIAcuan) {
 		return errTerkunci
 	}
+	if !adaID(d.Acuan, id, func(a Acuan) int { return a.ID }) {
+		return ErrItemTidakDitemukan
+	}
 	d.Acuan = hapusByID(d.Acuan, id, func(a Acuan) int { return a.ID })
 	cp.JumlahAcuan = len(d.Acuan)
 	s.hapusAcuanDB(kode, id)
@@ -91,6 +104,7 @@ func (s *Store) TambahKriteria(kode string, u *User, jenis, uraian string) error
 	if jenis != "INKLUSI" && jenis != "EKSKLUSI" {
 		return errors.New("Jenis kriteria harus INKLUSI atau EKSKLUSI.")
 	}
+	uraian = strings.TrimSpace(uraian)
 	if uraian == "" {
 		return errors.New("Uraian kriteria wajib diisi.")
 	}
@@ -111,6 +125,9 @@ func (s *Store) HapusKriteria(kode string, u *User, id int) error {
 	if !bolehUbah(u.Peran, cp.Status, ISIKriteria) {
 		return errTerkunci
 	}
+	if !adaID(d.Kriteria, id, func(k Kriteria) int { return k.ID }) {
+		return ErrItemTidakDitemukan
+	}
 	d.Kriteria = hapusByID(d.Kriteria, id, func(k Kriteria) int { return k.ID })
 	s.hapusKriteriaDB(kode, id)
 	return nil
@@ -127,8 +144,12 @@ func (s *Store) TambahRencana(kode string, u *User, r Rencana) error {
 	if !bolehUbah(u.Peran, cp.Status, ISIRencana) {
 		return errTerkunci
 	}
+	r.Nama = strings.TrimSpace(r.Nama)
 	if r.Nama == "" {
 		return errors.New("Nama rencana wajib diisi.")
+	}
+	if r.Hari < 1 {
+		return errors.New("Hari minimal 1.")
 	}
 	if r.Severity != "I" && r.Severity != "II" && r.Severity != "III" {
 		return errors.New("Severity harus I, II, atau III.")
@@ -164,11 +185,23 @@ func (s *Store) HapusRencana(kode string, u *User, id int) error {
 	if !bolehUbah(u.Peran, cp.Status, ISIRencana) {
 		return errTerkunci
 	}
+	if !adaID(d.Rencana, id, func(x Rencana) int { return x.ID }) {
+		return ErrItemTidakDitemukan
+	}
 	d.Rencana = hapusByID(d.Rencana, id, func(x Rencana) int { return x.ID })
 	cp.JumlahRencana = len(d.Rencana)
 	s.hapusRencanaDB(kode, id)
 	s.simpanCPState(cp)
 	return nil
+}
+
+func adaID[T any](items []T, id int, getID func(T) int) bool {
+	for _, it := range items {
+		if getID(it) == id {
+			return true
+		}
+	}
+	return false
 }
 
 func hapusByID[T any](items []T, id int, getID func(T) int) []T {

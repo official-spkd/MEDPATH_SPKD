@@ -89,6 +89,7 @@ async function simpan(r: Row) {
 }
 
 async function hapus(r: Row) {
+  if (!window.confirm(`Cabut padanan ${r.kode}?`)) return
   try {
     resp.value = await api<Resp>(`${basis.value}/${encodeURIComponent(r.kode)}`, { method: 'DELETE' })
   } catch (e) {
@@ -141,7 +142,7 @@ const statusFilter = computed(() =>
           <p class="rk-l">Belum dipetakan</p>
         </div>
         <div v-if="!snomed" class="rk card">
-          <p class="rk-n angka" style="color: var(--brand-aktif)">{{ resp.ringkasan.cakupan_episode }}%</p>
+          <p class="rk-n angka" style="color: var(--brand-aktif)">{{ angka(resp.ringkasan.cakupan_episode) }}%</p>
           <p class="rk-l">Cakupan episode</p>
         </div>
       </div>

@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -36,6 +37,16 @@ func New(s *store.Store) *Server {
 func (s *Server) Handler() http.Handler { return cors(http.HandlerFunc(s.transactional)) }
 
 func (s *Server) rute() {
+	s.mux.Handle("GET /api/v1/admin", s.auth(s.hanyaAdmin(s.administrasi)))
+	s.mux.Handle("PUT /api/v1/admin/profil", s.auth(s.hanyaAdmin(s.ubahProfil)))
+	s.mux.Handle("PUT /api/v1/admin/pengguna", s.auth(s.hanyaSuperAdmin(s.ubahPengguna)))
+	s.mux.Handle("POST /api/v1/admin/pengguna", s.auth(s.hanyaSuperAdmin(s.tambahPengguna)))
+	s.mux.Handle("POST /api/v1/admin/nonaktifkan-demo", s.auth(s.hanyaSuperAdmin(s.nonaktifkanDemo)))
+	s.mux.Handle("POST /api/v1/admin/kunci", s.auth(s.hanyaSuperAdmin(s.buatKunci)))
+	s.mux.Handle("DELETE /api/v1/admin/kunci/{id}", s.auth(s.hanyaSuperAdmin(s.cabutKunci)))
+	s.mux.HandleFunc("GET /api/v1/integrasi/cp-aktif", s.integrasiCP)
+	s.mux.Handle("POST /api/v1/dokumen-panduan", s.auth(s.hanyaAdmin(s.tambahDokumen)))
+	s.mux.Handle("GET /api/v1/dokumen-panduan/{id}", s.auth(s.detailDokumen))
 	// Publik
 	s.mux.HandleFunc("POST /api/v1/auth/login", s.login)
 	s.mux.HandleFunc("GET /api/v1/kesehatan", s.kesehatan)
@@ -78,7 +89,7 @@ func (s *Server) rute() {
 // --- Handlers ---
 
 func (s *Server) kesehatan(w http.ResponseWriter, _ *http.Request) {
-	tulisJSON(w, http.StatusOK, map[string]string{"status": "ok", "layanan": "transcpg-api"})
+	tulisJSON(w, http.StatusOK, map[string]string{"status": "ok", "layanan": "medpath-api"})
 }
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
@@ -110,12 +121,12 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 	tulisJSON(w, http.StatusOK, map[string]any{"user": userDari(r)})
 }
 
-func (s *Server) dashboard(w http.ResponseWriter, _ *http.Request) {
-	tulisJSON(w, http.StatusOK, s.store.Dashboard())
+func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
+	tulisJSON(w, http.StatusOK, s.store.Dashboard(r.URL.Query().Get("rs"), r.URL.Query().Get("layanan")))
 }
 
-func (s *Server) daftarCP(w http.ResponseWriter, _ *http.Request) {
-	tulisJSON(w, http.StatusOK, map[string]any{"data": s.store.ListCP()})
+func (s *Server) daftarCP(w http.ResponseWriter, r *http.Request) {
+	tulisJSON(w, http.StatusOK, map[string]any{"data": s.store.ListCPFiltered(r.URL.Query().Get("rs"), r.URL.Query().Get("layanan"))})
 }
 
 func (s *Server) detailCP(w http.ResponseWriter, r *http.Request) {
@@ -197,6 +208,10 @@ func (s *Server) hapusRencana(w http.ResponseWriter, r *http.Request) {
 // hasilUbah membalas dengan detail CP terbaru atau galat.
 func (s *Server) hasilUbah(w http.ResponseWriter, r *http.Request, err error) {
 	if err != nil {
+		if errors.Is(err, store.ErrItemTidakDitemukan) {
+			tulisGalat(w, http.StatusNotFound, err.Error())
+			return
+		}
 		tulisGalat(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
@@ -204,8 +219,8 @@ func (s *Server) hasilUbah(w http.ResponseWriter, r *http.Request, err error) {
 	tulisJSON(w, http.StatusOK, d)
 }
 
-func (s *Server) approval(w http.ResponseWriter, _ *http.Request) {
-	tulisJSON(w, http.StatusOK, map[string]any{"data": s.store.Approval()})
+func (s *Server) approval(w http.ResponseWriter, r *http.Request) {
+	tulisJSON(w, http.StatusOK, map[string]any{"data": s.store.Approval(r.URL.Query().Get("rs"), r.URL.Query().Get("layanan"))})
 }
 
 func (s *Server) dokumen(w http.ResponseWriter, _ *http.Request) {
@@ -291,8 +306,8 @@ func (s *Server) panduan(w http.ResponseWriter, _ *http.Request) {
 
 // --- Evaluasi ---
 
-func (s *Server) evaluasi(w http.ResponseWriter, _ *http.Request) {
-	tulisJSON(w, http.StatusOK, s.store.Evaluasi())
+func (s *Server) evaluasi(w http.ResponseWriter, r *http.Request) {
+	tulisJSON(w, http.StatusOK, s.store.Evaluasi(r.URL.Query().Get("rs"), r.URL.Query().Get("layanan")))
 }
 
 func (s *Server) evaluasiDetail(w http.ResponseWriter, r *http.Request) {

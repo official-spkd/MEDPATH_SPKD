@@ -97,11 +97,13 @@ async function toggle(kode: string) {
                 <p class="meta">{{ r.kelompok_diagnosis }} · aktif sejak {{ r.aktif_sejak }} · {{ angka(r.episode_sesudah) }} episode sesudah</p>
               </div>
               <span v-if="r.perlu_ditinjau" class="badge hambat"><TriangleAlert :size="12" /> {{ r.temuan.length }} temuan</span>
-              <span v-else class="badge ok"><CircleCheck :size="12" /> Sesuai target</span>
+              <span v-else-if="r.episode_sesudah > 0" class="badge ok"><CircleCheck :size="12" /> Sesuai target</span>
+              <span v-if="!r.episode_sesudah" class="badge">Belum ada klaim sesudah tanggal aktif</span>
             </button>
 
             <div v-if="expanded === r.kode" class="detail-panel">
               <div v-if="memuatDetail === r.kode" class="memuat-kecil">Memuat…</div>
+              <p v-else-if="detail[r.kode] && !r.episode_sesudah">Belum ada episode klaim pada atau sesudah tanggal aktif CP. Metrik mutu dan biaya belum dapat dihitung.</p>
               <template v-else-if="detail[r.kode]">
                 <!-- Temuan -->
                 <div v-if="detail[r.kode].temuan.length" class="temuan">
@@ -121,7 +123,7 @@ async function toggle(kode: string) {
                       <td class="kanan angka">{{ angka(m.episode) }}</td>
                       <td class="kanan angka" :class="{ lewat: m.los_median > m.target_p75 }">{{ m.los_median }} hari</td>
                       <td class="kanan angka muted">{{ m.target_los }} / {{ m.target_p75 }}</td>
-                      <td class="kanan angka" :class="{ lewat: m.persen_lewat_p75 >= 30 }">{{ m.persen_lewat_p75 }}%</td>
+                      <td class="kanan angka" :class="{ lewat: m.persen_lewat_p75 >= 30 }">{{ angka(m.persen_lewat_p75) }}%</td>
                       <td class="kanan angka muted">{{ m.episode_icu }}</td>
                     </tr>
                   </tbody>
@@ -140,13 +142,13 @@ async function toggle(kode: string) {
                   </div>
                   <div class="b-kotak">
                     <p class="b-l">Diagnosis di luar pola</p>
-                    <p class="b-n angka">{{ detail[r.kode].kendali_biaya.persen_diagnosis_di_luar_pola }}%</p>
+                    <p class="b-n angka">{{ angka(detail[r.kode].kendali_biaya.persen_diagnosis_di_luar_pola) }}%</p>
                   </div>
                   <div class="b-kotak lebar">
                     <p class="b-l">Bauran severity (sebelum → sesudah)</p>
                     <div class="baur">
                       <span v-for="sv in ['I', 'II', 'III']" :key="sv" class="baur-item">
-                        <b>{{ sv }}</b> {{ detail[r.kode].kendali_biaya.baur_severity_sebelum[sv] }}% → {{ detail[r.kode].kendali_biaya.baur_severity_sesudah[sv] }}%
+                        <b>{{ sv }}</b> {{ angka(detail[r.kode].kendali_biaya.baur_severity_sebelum[sv]) }}% → {{ angka(detail[r.kode].kendali_biaya.baur_severity_sesudah[sv]) }}%
                       </span>
                     </div>
                   </div>

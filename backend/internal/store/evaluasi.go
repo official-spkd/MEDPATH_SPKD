@@ -45,81 +45,84 @@ type EvaluasiResp struct {
 	Data      []EvaluasiRow  `json:"data"`
 }
 
-// hash sederhana & deterministik dari kode.
-func hashKode(kode string) int {
-	h := 0
-	for _, c := range kode {
-		h = h*31 + int(c)
-	}
-	if h < 0 {
-		h = -h
-	}
-	return h
-}
-
+// Seluruh nilai observasi dihitung dari episode sumber dengan tanggal masuk
+// sesudah/tepat tanggal aktif. Tanpa episode, tampilkan keadaan belum ada data.
 func (s *Store) hitungEvaluasi(c CP, d *DetailExtra) EvaluasiDetail {
-	h := hashKode(c.Kode)
-	epSesudah := int(float64(c.JumlahEpisode) * 0.42)
-	var temuan []string
+	before, after := []Klaim{}, []Klaim{}
+	for _, k := range s.klaim {
+		if k.KodeCP != c.Kode {
+			continue
+		}
+		if k.TanggalMasuk >= c.StatusSejak {
+			after = append(after, k)
+		} else {
+			before = append(before, k)
+		}
+	}
+	temuan := []string{}
 	mutu := []MutuSeverity{}
-	tarifBase := 4_000_000 + (h%40)*100_000
-
-	for i, sv := range d.Severity {
-		targetMedian := sv.LosMedian
-		targetP75 := targetMedian + 2
-		delta := (h / (i + 1)) % 4 // 0..3
-		median := targetMedian + delta - 1
-		if median < 1 {
-			median = 1
+	baurBefore, baurAfter := map[string]float64{}, map[string]float64{}
+	var total int64
+	outside := 0
+	for _, k := range after {
+		total += k.Tarif
+		if k.DiLuarPola {
+			outside++
 		}
-		p75 := median + 2
-		ep := int(float64(epSesudah) * porsiSeverity[i])
-		persenLewat := float64((h + i*7) % 40) // 0..39%
-		m := MutuSeverity{
-			Severity: sv.Severity, Episode: ep, LosMedian: median, LosP75: p75,
-			TargetLos: targetMedian, TargetP75: targetP75,
-			PersenLewatP75: persenLewat, EpisodeIcu: ep / 8,
+	}
+	for _, sv := range d.Severity {
+		los := []int{}
+		prev := []int{}
+		icu, lewat := 0, 0
+		for _, k := range before {
+			if k.Severity == sv.Severity {
+				prev = append(prev, k.LOS)
+			}
 		}
+		target, targetP75 := sv.LosMedian, sv.LosMedian+2
+		if len(prev) > 0 {
+			target = kuantil(prev, 0.5)
+			targetP75 = kuantil(prev, 0.75)
+		}
+		for _, k := range after {
+			if k.Severity == sv.Severity {
+				los = append(los, k.LOS)
+				if k.ICU {
+					icu++
+				}
+				if k.LOS > targetP75 {
+					lewat++
+				}
+			}
+		}
+		m := MutuSeverity{sv.Severity, len(los), kuantil(los, 0.5), kuantil(los, 0.75), target, targetP75, persentase(lewat, len(los)), icu}
 		mutu = append(mutu, m)
-		if ep > 0 && median > targetP75 {
-			temuan = append(temuan, fmt.Sprintf("Severity %s: median LOS %d hari melebihi p75 target (%d hari).", sv.Severity, median, targetP75))
+		baurBefore[sv.Severity] = persentase(len(prev), len(before))
+		baurAfter[sv.Severity] = persentase(len(los), len(after))
+		if len(los) > 0 && m.LosMedian > targetP75 {
+			temuan = append(temuan, fmt.Sprintf("Tingkat keparahan %s: median LOS %d hari melebihi p75 target (%d hari).", sv.Severity, m.LosMedian, targetP75))
 		}
-		if ep > 0 && persenLewat >= 30 {
-			temuan = append(temuan, fmt.Sprintf("Severity %s: %.0f%% episode lama rawatnya melewati p75 target.", sv.Severity, persenLewat))
+		if len(los) > 0 && m.PersenLewatP75 >= 30 {
+			temuan = append(temuan, fmt.Sprintf("Tingkat keparahan %s: sedikitnya 30%% episode melewati p75 target.", sv.Severity))
 		}
 	}
-
-	baurSebelum := map[string]float64{"I": 50, "II": 35, "III": 15}
-	naik := float64((h % 12))
-	baurSesudah := map[string]float64{"I": 50 - naik/2, "II": 35 - naik/2, "III": 15 + naik}
-	if naik >= 8 {
-		temuan = append(temuan, fmt.Sprintf("Porsi severity III naik 15%% → %.0f%%. Periksa kesesuaian pengkodean.", baurSesudah["III"]))
+	if len(before) > 0 && baurAfter["III"]-baurBefore["III"] >= 8 {
+		temuan = append(temuan, "Porsi tingkat keparahan III naik setidaknya 8 poin persentase. Periksa kesesuaian pengkodean.")
 	}
-
-	return EvaluasiDetail{
-		EvaluasiRow: EvaluasiRow{
-			Kode: c.Kode, Nama: c.Nama, Kelompok: c.Kelompok, AktifSejak: c.StatusSejak,
-			EpisodeSesudah: epSesudah, PerluDitinjau: len(temuan) > 0, Temuan: nz(temuan),
-		},
-		KendaliMutu: mutu,
-		KendaliBiaya: KendaliBiaya{
-			BaurSeveritySebelum: baurSebelum,
-			BaurSeveritySesudah: baurSesudah,
-			TarifRataRata:       tarifBase,
-			TotalKlaim:          int64(tarifBase) * int64(epSesudah),
-			PersenDiLuarPola:    float64(h % 12),
-		},
+	avg := 0
+	if len(after) > 0 {
+		avg = int(total / int64(len(after)))
 	}
+	return EvaluasiDetail{EvaluasiRow: EvaluasiRow{c.Kode, c.Nama, c.Kelompok, c.StatusSejak, len(after), len(temuan) > 0, temuan}, KendaliMutu: mutu, KendaliBiaya: KendaliBiaya{baurBefore, baurAfter, avg, total, persentase(outside, len(after))}}
 }
 
 // Evaluasi mengembalikan ringkasan + baris untuk seluruh CP aktif.
-func (s *Store) Evaluasi() EvaluasiResp {
+func (s *Store) Evaluasi(filter ...string) EvaluasiResp {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	rows := []EvaluasiRow{}
 	var bisa, perlu, belum int
-	for i := range s.cp {
-		c := s.cp[i]
+	for _, c := range filterCP(s.cp, filter) {
 		if c.Status != "AKTIF" {
 			belum++
 			continue
@@ -133,10 +136,16 @@ func (s *Store) Evaluasi() EvaluasiResp {
 		}
 		rows = append(rows, det.EvaluasiRow)
 	}
+	sampai := "Belum ada klaim"
+	for _, k := range s.klaim {
+		if sampai == "Belum ada klaim" || k.TanggalMasuk > sampai {
+			sampai = k.TanggalMasuk
+		}
+	}
 	return EvaluasiResp{
 		Ringkasan: map[string]any{
 			"cp_aktif": len(rows), "bisa_dievaluasi": bisa,
-			"perlu_ditinjau": perlu, "belum_aktif": belum, "klaim_sampai": "2026-10-05",
+			"perlu_ditinjau": perlu, "belum_aktif": belum, "klaim_sampai": sampai,
 		},
 		Data: rows,
 	}

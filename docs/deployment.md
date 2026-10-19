@@ -27,7 +27,7 @@ Tidak perlu menaruh Supabase service-role key atau database password di frontend
 ## Database
 
 Saat cold start pertama, backend membuat tabel yang belum ada (tanpa drop tabel),
-menambahkan `auth_sessions`, dan mengaktifkan RLS untuk tabel aplikasi. Tidak dibuat
+menambahkan `auth_sessions`, `app_users`, `app_state`, dan `klaim_episode`, dan mengaktifkan RLS untuk tabel aplikasi. Tidak dibuat
 policy untuk akses browser langsung; seluruh akses lewat Go dengan role database
 server yang memiliki izin tabel. State CP yang sudah ada dipertahankan. Database kosong
 akan diisi data demo, di dalam transaksi dan lock agar startup bersamaan tidak menggandakan data.
@@ -46,8 +46,17 @@ ini tidak memindahkan data dari database lain secara otomatis.
 - Backend `go test -race ./...` dengan `TEST_DATABASE_URL` database uji.
 - Frontend `npm ci && npm run build`.
 
-Akun, password demo, dan statistik sintetis tetap seperti sebelumnya. Deployment hosting
-bukan bukti bahwa aplikasi telah siap mengelola data klinis nyata.
+Hash sandi memakai PBKDF2-HMAC-SHA256 (600.000 iterasi, salt acak). Form login produksi
+menyembunyikan bantuan akun demo. Super Admin harus membuat akun non-demo melalui
+Pengaturan → Manajemen Pengguna, masuk dengan akun tersebut, lalu memilih Nonaktifkan
+Akun Demo. Jangan menonaktifkan demo sebelum akses pengganti terverifikasi.
+
+Evaluasi CP menghitung episode dari `klaim_episode` berdasarkan tanggal aktivasi; database
+tanpa episode menampilkan keadaan kosong. Pengisian sumber klaim harus melalui proses
+impor tervalidasi, bukan angka buatan. Statistik pustaka awal masih berasal dari data demo.
+`ALLOWED_ORIGINS` berisi origin lengkap dipisah koma jika frontend berada di origin lain;
+frontend dan API pada domain Vercel yang sama tidak memerlukan CORS lintas origin.
+Deployment hosting bukan bukti kesiapan mengelola data klinis nyata.
 
 ## Rollback
 

@@ -60,7 +60,7 @@ Urutan kerja `router.beforeEach`:
 | getter | `masuk` (ada token), `isAdmin`, `isSuperAdmin` |
 | action | `login(email, password)`, `muatProfil()`, `logout()`, `bersihkan()` |
 
-Token disimpan di `localStorage` dengan kunci **`transcpg-token`**. Jika `/auth/me` gagal (mis. backend baru restart sehingga token tak dikenal), `bersihkan()` menghapus token dan pengguna diarahkan ke login.
+Token disimpan di `localStorage` dengan kunci **`transcpg-token`**. Jika `/auth/me` gagal (misalnya token kedaluwarsa atau dicabut), `bersihkan()` menghapus token dan pengguna diarahkan ke login.
 
 ### `stores/tema.ts`
 

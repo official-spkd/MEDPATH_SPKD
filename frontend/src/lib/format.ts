@@ -42,10 +42,10 @@ export function sapaan(): string {
 }
 
 export const LABEL_STATUS: Record<string, string> = {
-  DRAFT: 'Draft',
+  DRAFT: 'Draf',
   REVISI: 'Perlu Revisi',
-  REVIEW_TIM_CP: 'Review Tim CP',
-  REVIEW_KOMITE: 'Review Komite Medik',
+  REVIEW_TIM_CP: 'Tinjauan Tim CP',
+  REVIEW_KOMITE: 'Tinjauan Komite Medik',
   MENUNGGU_DIREKTUR: 'Menunggu Direktur',
   AKTIF: 'Aktif',
 }

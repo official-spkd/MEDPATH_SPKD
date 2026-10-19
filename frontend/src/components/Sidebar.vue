@@ -42,9 +42,9 @@ const grup = computed<{ judul: string; item: Item[] }[]>(() => {
     {
       judul: 'Utama',
       item: [
-        { label: 'Dashboard', to: '/', icon: LayoutDashboard, exact: true },
-        { label: 'CP Library', to: '/library', icon: Library },
-        { label: 'Approval', to: '/approval', icon: Stamp, badge: props.antrean },
+        { label: 'Dasbor', to: '/', icon: LayoutDashboard, exact: true },
+        { label: 'Pustaka CP', to: '/library', icon: Library },
+        { label: 'Pengesahan', to: '/approval', icon: Stamp, badge: props.antrean },
         { label: 'CP Aktif', to: '/cp-aktif', icon: BadgeCheck },
         { label: 'Evaluasi CP', to: '/evaluasi', icon: TrendingUp },
       ] as Item[],
@@ -113,6 +113,10 @@ async function keluar() {
 </template>
 
 <style scoped>
+@media (max-width: 760px) {
+  .sidebar { display: none !important; position: fixed !important; inset: 0 auto 0 0; z-index: 40; }
+  .sidebar.mobile-buka { display: flex !important; }
+}
 .sidebar {
   width: 248px;
   flex-shrink: 0;

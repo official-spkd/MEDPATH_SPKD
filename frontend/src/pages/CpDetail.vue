@@ -18,7 +18,7 @@ import {
   Trash2,
 } from 'lucide-vue-next'
 import { api, GalatApi } from '@/lib/api'
-import { angka } from '@/lib/format'
+import { angka, LABEL_SUMBER } from '@/lib/format'
 import StatusPill from '@/components/StatusPill.vue'
 
 interface Aksi { aksi: string; ke: string; label: string }
@@ -115,7 +115,7 @@ const tambahAcuan = () =>
       tambahAcuanBuka.value = false
     },
   )
-const hapusAcuan = (id: number) => kirimEdit(() => api<Detail>(`cp/${kode.value}/acuan/${id}`, { method: 'DELETE' }))
+const hapusAcuan = (id: number) => window.confirm("Hapus acuan ini? Tindakan ini melepasnya dari CP.") && kirimEdit(() => api<Detail>(`cp/${kode.value}/acuan/${id}`, { method: 'DELETE' }))
 
 const tambahKriteria = () =>
   kirimEdit(
@@ -125,7 +125,7 @@ const tambahKriteria = () =>
       tambahKriteriaBuka.value = false
     },
   )
-const hapusKriteria = (id: number) => kirimEdit(() => api<Detail>(`cp/${kode.value}/kriteria/${id}`, { method: 'DELETE' }))
+const hapusKriteria = (id: number) => window.confirm("Hapus kriteria ini? Tindakan ini melepasnya dari CP.") && kirimEdit(() => api<Detail>(`cp/${kode.value}/kriteria/${id}`, { method: 'DELETE' }))
 
 const tambahRencana = () =>
   kirimEdit(
@@ -135,7 +135,7 @@ const tambahRencana = () =>
       tambahRencanaBuka.value = false
     },
   )
-const hapusRencana = (id: number) => kirimEdit(() => api<Detail>(`cp/${kode.value}/rencana/${id}`, { method: 'DELETE' }))
+const hapusRencana = (id: number) => window.confirm("Hapus rencana ini? Tindakan ini melepasnya dari CP.") && kirimEdit(() => api<Detail>(`cp/${kode.value}/rencana/${id}`, { method: 'DELETE' }))
 
 watch(tambahAcuanBuka, (v) => v && muatDokumen())
 
@@ -185,7 +185,7 @@ const tabs = [
   <div v-else class="detail">
     <!-- Header -->
     <div class="head">
-      <button class="btn btn-ghost btn-sm kembali" @click="router.push('/library')"><ArrowLeft :size="16" /> CP Library</button>
+      <button class="btn btn-ghost btn-sm kembali" @click="router.push('/library')"><ArrowLeft :size="16" /> Pustaka CP</button>
       <div class="head-main">
         <div>
           <div class="judul-baris">
@@ -270,7 +270,7 @@ const tabs = [
               <span class="acuan-ikon"><BookOpenText :size="17" /></span>
               <div class="acuan-isi">
                 <p class="acuan-nama">{{ a.dokumen }}</p>
-                <p class="acuan-meta">{{ a.sumber }} · {{ a.tahun }}</p>
+                <p class="acuan-meta">{{ LABEL_SUMBER[a.sumber] ?? a.sumber }} · {{ a.tahun }}</p>
                 <p v-if="a.catatan" class="acuan-catatan">{{ a.catatan }}</p>
               </div>
               <button v-if="d.boleh_ubah?.acuan" class="hapus-btn" title="Hapus acuan" @click="hapusAcuan(a.id)">

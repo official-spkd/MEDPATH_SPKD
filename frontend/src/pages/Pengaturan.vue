@@ -15,9 +15,9 @@ interface Kartu {
 const auth = useAuth()
 const kartu = computed<Kartu[]>(() => {
   const k: Kartu[] = [
-    { icon: Users, judul: 'Pengguna & Peran', teks: 'Kelola akun, peran RBAC, dan status aktif pengguna rumah sakit.' },
-    { icon: Building2, judul: 'Profil Rumah Sakit', teks: 'Tipe RS, kepemilikan, regional, dan kelas tertinggi untuk resolusi tarif.' },
-    { icon: KeyRound, judul: 'Kunci Integrasi', teks: 'Terbitkan API key untuk TransCPR-X mengambil CP aktif.' },
+    { icon: Users, judul: 'Pengguna & Peran', to: '/pengaturan/kelola/pengguna', teks: 'Kelola akun, peran RBAC, dan status aktif pengguna rumah sakit.' },
+    { icon: Building2, judul: 'Profil Rumah Sakit', to: '/pengaturan/kelola/profil', teks: 'Tipe RS, kepemilikan, regional, dan kelas tertinggi untuk resolusi tarif.' },
+    { icon: KeyRound, judul: 'Kunci Integrasi', to: '/pengaturan/kelola/integrasi', teks: 'Terbitkan API key untuk TransCPR-X mengambil CP aktif.' },
   ]
   if (auth.isSuperAdmin) {
     k.push({
@@ -51,7 +51,7 @@ const kartu = computed<Kartu[]>(() => {
         </div>
         <h3>{{ k.judul }}</h3>
         <p>{{ k.teks }}</p>
-        <span v-if="k.to" class="buka">Buka panduan <ArrowRight :size="14" /></span>
+        <span v-if="k.to" class="buka">Buka <ArrowRight :size="14" /></span>
       </component>
     </div>
   </div>

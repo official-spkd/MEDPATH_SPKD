@@ -5,19 +5,10 @@
 ## Model hybrid dalam satu gambar
 
 ```text
-           start backend
-                │
-       newBase(): bangun data demo LENGKAP di memori
-                │
-        DB tersambung? ── tidak ──▶ jalan murni in-memory (perubahan hilang saat restart)
-                │ ya
-        CREATE TABLE IF NOT EXISTS (7 tabel)
-                │
-      cp_state kosong? ── ya ──▶ seedDB(): tulis state memori ke DB
-                │ tidak
-           loadDB(): timpa bagian yang "berubah" di memori dengan isi DB
-                │
-   selama berjalan: setiap mutasi → ubah memori → write-through ke DB
+Startup → koneksi PostgreSQL → migrasi idempoten → seed hanya bila cp_state kosong.
+Request → transaksi → snapshot DB → validasi & perubahan → commit.
+Galat → rollback dan HTTP 503, tanpa respons sukses semu.
+DEMO_IN_MEMORY=true → demo lokal eksplisit; perubahan hilang saat restart.
 ```
 
 Kenapa hybrid? Aturan domain (pengesahan, syarat, evaluasi) sudah ditulis untuk bekerja di atas struktur memori; persistensi ditambahkan tanpa menulis ulang logika itu. Data statis yang tidak pernah diubah pengguna tidak perlu tabel.
@@ -50,9 +41,9 @@ Di `cp_rencana`, kolom `kode_item` menyimpan `Rencana.Kode` (kode KFA/LOINC/ICD-
 
 ## Yang TIDAK disimpan di DB
 
-Statistik severity, sub-CP (diagnosis), daftar 24 CP beserta nama/kelompok/episode, 10 dokumen panduan, master KPTL & SNOMED, daftar prosedur & diagnosis klaim, akun pengguna, dan **token sesi**. Semua itu dibangkitkan ulang dari kode Go setiap start.
+Statistik severity, sub-CP (diagnosis), daftar 24 CP beserta nama/kelompok/episode, 10 dokumen panduan, master KPTL & SNOMED, daftar prosedur & diagnosis klaim, serta definisi akun demo. Metadata awal berasal dari kode Go. Hash token sesi disimpan di auth_sessions (24 jam). Dokumen dan profil yang diedit disimpan di app_state; episode sumber evaluasi berada di klaim_episode.
 
-Konsekuensinya: menambah CP baru atau dokumen baru saat ini berarti **mengubah kode**, bukan menambah baris DB. Ini perlu berubah saat impor klaim dan manajemen dokumen dibangun.
+CP baru masih memerlukan pengembangan impor data. Dokumen dapat ditambahkan melalui Dokumen Panduan; pengguna non-demo melalui Pengaturan oleh Super Admin. Hash sandi pengguna non-demo disimpan di `app_users`.
 
 ## Write-through
 
@@ -68,7 +59,7 @@ Helper di `persist.go` (semuanya *no-op* bila `pool == nil`):
 | `simpanPadananKptlDB` / `simpanPadananSnomedDB` | `INSERT … ON CONFLICT DO UPDATE` (upsert) |
 | `hapusPadananKptlDB` / `hapusPadananSnomedDB` | `DELETE` |
 
-> **Keterbatasan penting:** galat dari `pool.Exec` pada write-through saat ini **diabaikan**. Jika DB putus di tengah jalan, memori tetap berubah tetapi DB tidak — dan perubahan itu hilang saat restart. Perbaikan yang disarankan: kembalikan `error` dari helper, dan di method `store` lakukan perubahan memori **setelah** DB sukses (atau bungkus dalam transaksi).
+> Semua penulisan state dan jejak pengesahan berada dalam transaksi yang sama. Galat SQL membatalkan transaksi dan dibalas dengan 503.
 
 ## Load (`loadDB`)
 
@@ -76,6 +67,7 @@ Helper di `persist.go` (semuanya *no-op* bila `pool == nil`):
 2. Kosongkan `Acuan`, `Kriteria`, `Rencana` semua CP, lalu isi dari tabelnya (urut `kode, id`).
 3. Kosongkan riwayat, isi dari `cp_riwayat`, dan set `nextRiwayat` ke `id` terbesar + 1.
 4. Ganti peta padanan dengan isi tabel padanan.
+5. Muat pengguna non-demo, pengaturan administrasi, dokumen, serta episode klaim.
 
 `Severity` dan `SubCP` tidak disentuh — tetap dari `bangunDetail`.
 
@@ -85,7 +77,7 @@ Helper di `persist.go` (semuanya *no-op* bila `pool == nil`):
 |---|---|---|
 | Seed gagal: `duplicate key … cp_riwayat_pkey` | ID riwayat demo mulai dari 1 per CP, sedangkan PK awalnya hanya `id` | PK diubah menjadi `(kode, id)` |
 | Halaman Detail CP blank untuk CP AKTIF | slice `nil` di Go → JSON `null` → `null.length` di Vue | semua slice diinisialisasi `[]T{}` |
-| Setelah restart, data kembali ke awal | backend jalan in-memory karena DB tak terjangkau | cek log `Terhubung ke PostgreSQL.` |
+| Setelah restart, data kembali ke awal | mode DEMO_IN_MEMORY=true sengaja diaktifkan | cek log `Terhubung ke PostgreSQL.` |
 
 ## Inspeksi manual
 
@@ -106,9 +98,9 @@ pg_restore -d transcpg --clean medpath_2026-10-07.dump  # restore
 
 ## Arah migrasi berikutnya
 
-Saat data statis harus bisa dikelola (impor klaim, tambah dokumen, kelola pengguna), urutan yang disarankan:
+Pengguna dan dokumen sudah dapat dikelola. Pengembangan berikutnya:
 
-1. Tabel `users` dengan `password_hash` (bcrypt/argon2) + tabel `sesi` → login tahan restart.
+1. Pertahankan `app_users` (PBKDF2-HMAC-SHA256) dan `auth_sessions`; tambahkan pembatasan laju login.
 2. Tabel `clinical_pathway`, `klaim_episode`, `dokumen_panduan`, master kode — rujuk skema migrasi Laravel di `_legacy/backend-laravel/database/migrations`.
 3. Ganti generator demo di `cpg.go`/`detail.go` dengan query.
 4. Kenalkan alat migrasi berversi (mis. `goose` atau `golang-migrate`) menggantikan `CREATE TABLE IF NOT EXISTS`.

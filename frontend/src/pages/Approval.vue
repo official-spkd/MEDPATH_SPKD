@@ -22,7 +22,7 @@ const memuat = ref(true)
 onMounted(async () => {
   try {
     const res = await api<{ data: CP[] }>('approval')
-    data.value = res.data
+    data.value = res.data ?? []
   } finally {
     memuat.value = false
   }
@@ -31,7 +31,7 @@ onMounted(async () => {
 
 <template>
   <div>
-    <PageHeader judul="Approval" demo sub="Antrean pengesahan Clinical Pathway — Tim CP, Komite Medik, dan Direktur. Setiap tahap tercatat dalam audit trail." />
+    <PageHeader judul="Pengesahan" demo sub="Antrean pengesahan Clinical Pathway — Tim CP, Komite Medik, dan Direktur. Setiap tahap tercatat dalam audit trail." />
 
     <div class="card panel">
       <div class="panel-head">

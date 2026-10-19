@@ -1,6 +1,11 @@
 package store
 
-import "sort"
+import (
+	"fmt"
+	"sort"
+	"strings"
+	"time"
+)
 
 // Dashboard payload ringkasan untuk halaman utama (gaya eksekutif).
 type Dashboard struct {
@@ -74,8 +79,8 @@ type Tindakan struct {
 }
 
 // Dashboard menyusun ringkasan dari data CP demo.
-func (s *Store) Dashboard() Dashboard {
-	cps := s.ListCP()
+func (s *Store) Dashboard(filter ...string) Dashboard {
+	cps := filterCP(s.ListCP(), filter)
 
 	perStatus := map[string]int{
 		"DRAFT": 0, "REVISI": 0, "REVIEW_TIM_CP": 0,
@@ -84,9 +89,13 @@ func (s *Store) Dashboard() Dashboard {
 	perKelompokEpisode := map[string]int{}
 	perKelompokCP := map[string]int{}
 	var tanpaAcuan, aktif, diproses, totalEpisode, sudahAcuan int
+	revisi := []string{}
 
 	for _, c := range cps {
 		perStatus[c.Status]++
+		if c.Status == "REVISI" {
+			revisi = append(revisi, c.Kode+" "+c.Nama)
+		}
 		perKelompokEpisode[c.CMG] += c.JumlahEpisode
 		perKelompokCP[c.CMG]++
 		totalEpisode += c.JumlahEpisode
@@ -139,7 +148,7 @@ func (s *Store) Dashboard() Dashboard {
 		{"Acuan klinis ditetapkan", sudahAcuan, len(cps)},
 		{"Rencana klinis terisi", countRencana(cps), len(cps)},
 		{"CP tersahkan aktif", aktif, len(cps)},
-		{"Dokumen panduan terhubung", len(daftarDokumen), 14},
+		{"Dokumen panduan terhubung", len(s.ListDokumen()), 14},
 		{"Butir acuan terekstrak", butirTotal, 220},
 	}
 	skor := readinessSkor(komponen)
@@ -148,7 +157,7 @@ func (s *Store) Dashboard() Dashboard {
 		Kartu: KartuDashboard{
 			JumlahCP:        len(cps),
 			CpTanpaAcuan:    tanpaAcuan,
-			DokumenPanduan:  len(daftarDokumen),
+			DokumenPanduan:  len(s.administrasi.Dokumen),
 			ButirAcuan:      butirTotal,
 			CpAktif:         aktif,
 			DalamPengesahan: diproses,
@@ -165,17 +174,17 @@ func (s *Store) Dashboard() Dashboard {
 		Prioritas:     prioritas,
 		ButirKategori: butirKategori,
 		Tren: []TitikTren{
-			{"2026-05", 820, 9},
-			{"2026-06", 910, 11},
-			{"2026-07", 1180, 13},
-			{"2026-08", 1340, 14},
-			{"2026-09", 1510, 16},
+			{"2026-05", 820, s.aktifPada("2026-05", cps)},
+			{"2026-06", 910, s.aktifPada("2026-06", cps)},
+			{"2026-07", 1180, s.aktifPada("2026-07", cps)},
+			{"2026-08", 1340, s.aktifPada("2026-08", cps)},
+			{"2026-09", 1510, s.aktifPada("2026-09", cps)},
 			{"2026-10", totalEpisode, aktif},
 		},
 		Tindakan: []Tindakan{
-			{"stamp", "5 CP menunggu tindakan pengesahan", "Tim CP · Komite Medik · Direktur", "Tinggi"},
-			{"book-dashed", "4 CP belum punya acuan klinis", "Perlu ditetapkan Tim CP sebelum diajukan", "Tinggi"},
-			{"file-pen", "1 CP dikembalikan untuk revisi", "G-4-11 Epilepsi & Status Epileptikus", "Sedang"},
+			{"stamp", fmt.Sprintf("%d CP menunggu tindakan pengesahan", diproses), "Tim CP · Komite Medik · Direktur", "Tinggi"},
+			{"book-dashed", fmt.Sprintf("%d CP belum punya acuan klinis", tanpaAcuan), "Perlu ditetapkan Tim CP sebelum diajukan", "Tinggi"},
+			{"file-pen", fmt.Sprintf("%d CP dikembalikan untuk revisi", len(revisi)), strings.Join(revisi, ", "), "Sedang"},
 		},
 	}
 }
@@ -207,20 +216,20 @@ func readinessSkor(k []KomponenReadiness) int {
 func readinessLabel(skor int) string {
 	switch {
 	case skor >= 85:
-		return "Library CP sangat siap"
+		return "Pustaka CP sangat siap"
 	case skor >= 70:
-		return "Library CP cukup siap"
+		return "Pustaka CP cukup siap"
 	case skor >= 50:
-		return "Library CP perlu dilengkapi"
+		return "Pustaka CP perlu dilengkapi"
 	default:
-		return "Library CP masih awal"
+		return "Pustaka CP masih awal"
 	}
 }
 
 // Approval baris antrean pengesahan (CP yang sedang diproses / perlu revisi).
-func (s *Store) Approval() []CP {
-	var out []CP
-	for _, c := range s.ListCP() {
+func (s *Store) Approval(filter ...string) []CP {
+	out := []CP{}
+	for _, c := range filterCP(s.ListCP(), filter) {
 		if sedangDiproses(c.Status) || c.Status == "REVISI" {
 			out = append(out, c)
 		}
@@ -230,3 +239,27 @@ func (s *Store) Approval() []CP {
 
 // JumlahAntrean dipakai untuk badge menu Approval.
 func (s *Store) JumlahAntrean() int { return len(s.Approval()) }
+
+// Rekonstruksi status pada akhir periode dari jejak pengesahan, bukan angka tetap.
+func (s *Store) aktifPada(periode string, cps []CP) int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	start, err := time.Parse("2006-01", periode)
+	if err != nil {
+		return 0
+	}
+	batas := start.AddDate(0, 1, 0).Format("2006-01-02")
+	total := 0
+	for _, c := range cps {
+		status := "DRAFT"
+		for _, r := range s.riwayat[c.Kode] {
+			if r.Waktu < batas {
+				status = r.KeStatus
+			}
+		}
+		if status == "AKTIF" {
+			total++
+		}
+	}
+	return total
+}

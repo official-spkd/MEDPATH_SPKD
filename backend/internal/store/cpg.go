@@ -27,13 +27,14 @@ type Dokumen struct {
 	Tahun    int      `json:"tahun"`
 	Cakupan  []string `json:"icd10_cakupan"`
 	Butir    int      `json:"butir_count"`
+	IsiButir []string `json:"butir"`
 }
 
 var statusLabel = map[string]string{
-	"DRAFT":             "Draft",
+	"DRAFT":             "Draf",
 	"REVISI":            "Perlu Revisi",
-	"REVIEW_TIM_CP":     "Review Tim CP",
-	"REVIEW_KOMITE":     "Review Komite Medik",
+	"REVIEW_TIM_CP":     "Tinjauan Tim CP",
+	"REVIEW_KOMITE":     "Tinjauan Komite Medik",
 	"MENUNGGU_DIREKTUR": "Menunggu Direktur",
 	"AKTIF":             "Aktif",
 }
@@ -80,16 +81,16 @@ var daftarCP = []CP{
 }
 
 var daftarDokumen = []Dokumen{
-	{1, "PNPK Tata Laksana Sindrom Koroner Akut", "PNPK", "Kementerian Kesehatan", 2023, []string{"I21.0", "I21.4", "I21.9"}, 14},
-	{2, "PNPK Tata Laksana Gagal Jantung", "PNPK", "Kementerian Kesehatan", 2021, []string{"I50.0", "I50.9"}, 11},
-	{3, "PPK Neurologi RS — Stroke Iskemik", "PPK_RS", "Komite Medik RS SPKD", 2024, []string{"I63.9", "I63.5"}, 9},
-	{4, "PPK Penyakit Dalam RS — Penyakit Ginjal", "PPK_RS", "Komite Medik RS SPKD", 2022, []string{"N18.5", "N17.9"}, 8},
-	{5, "PPK Pulmonologi — Pneumonia Komunitas", "PPK_ASOSIASI", "Perhimpunan Profesi", 2023, []string{"J18.9", "J15.9"}, 10},
-	{6, "PNPK Infeksi Dengue Dewasa", "PNPK", "Kementerian Kesehatan", 2020, []string{"A91", "A90"}, 7},
-	{7, "PNPK Tata Laksana Demam Tifoid", "PNPK", "Kementerian Kesehatan", 2018, []string{"A01.0"}, 6},
-	{8, "PPK Penyakit Dalam RS — Sepsis", "PPK_RS", "Komite Medik RS SPKD", 2023, []string{"A41.9"}, 9},
-	{9, "PPK Endokrin — Diabetes Mellitus", "PPK_RS", "Komite Medik RS SPKD", 2024, []string{"E11.9", "E14.9"}, 12},
-	{10, "PNPK Tata Laksana PPOK", "PNPK", "Kementerian Kesehatan", 2022, []string{"J44.0", "J44.9"}, 8},
+	{1, "PNPK Tata Laksana Sindrom Koroner Akut", "PNPK", "Kementerian Kesehatan", 2023, []string{"I21.0", "I21.4", "I21.9"}, 14, nil},
+	{2, "PNPK Tata Laksana Gagal Jantung", "PNPK", "Kementerian Kesehatan", 2021, []string{"I50.0", "I50.9"}, 11, nil},
+	{3, "PPK Neurologi RS — Stroke Iskemik", "PPK_RS", "Komite Medik RS SPKD", 2024, []string{"I63.9", "I63.5"}, 9, nil},
+	{4, "PPK Penyakit Dalam RS — Penyakit Ginjal", "PPK_RS", "Komite Medik RS SPKD", 2022, []string{"N18.5", "N17.9"}, 8, nil},
+	{5, "PPK Pulmonologi — Pneumonia Komunitas", "PPK_ASOSIASI", "Perhimpunan Profesi", 2023, []string{"J18.9", "J15.9"}, 10, nil},
+	{6, "PNPK Infeksi Dengue Dewasa", "PNPK", "Kementerian Kesehatan", 2020, []string{"A91", "A90"}, 7, nil},
+	{7, "PNPK Tata Laksana Demam Tifoid", "PNPK", "Kementerian Kesehatan", 2018, []string{"A01.0"}, 6, nil},
+	{8, "PPK Penyakit Dalam RS — Sepsis", "PPK_RS", "Komite Medik RS SPKD", 2023, []string{"A41.9"}, 9, nil},
+	{9, "PPK Endokrin — Diabetes Mellitus", "PPK_RS", "Komite Medik RS SPKD", 2024, []string{"E11.9", "E14.9"}, 12, nil},
+	{10, "PNPK Tata Laksana PPOK", "PNPK", "Kementerian Kesehatan", 2022, []string{"J44.0", "J44.9"}, 8, nil},
 }
 
 var butirKategori = map[string]int{
@@ -126,8 +127,27 @@ func (s *Store) cpByKode(kode string) *CP {
 }
 
 // ListDokumen mengembalikan dokumen panduan.
-func (s *Store) ListDokumen() []Dokumen { return daftarDokumen }
+func (s *Store) ListDokumen() []Dokumen {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return append([]Dokumen{}, s.administrasi.Dokumen...)
+}
 
 func sedangDiproses(status string) bool {
 	return status == "REVIEW_TIM_CP" || status == "REVIEW_KOMITE" || status == "MENUNGGU_DIREKTUR"
+}
+
+// Seluruh dataset awal berasal dari RSUD Demo SPKD, layanan rawat inap.
+// Filter dijalankan pada himpunan data yang sama sebelum agregasi.
+func filterCP(cps []CP, filter []string) []CP {
+	if len(filter) < 2 {
+		return cps
+	}
+	if (filter[0] != "" && filter[0] != "RSUD Demo SPKD") || (filter[1] != "" && filter[1] != "Rawat Inap") {
+		return []CP{}
+	}
+	return cps
+}
+func (s *Store) ListCPFiltered(rs, layanan string) []CP {
+	return filterCP(s.ListCP(), []string{rs, layanan})
 }

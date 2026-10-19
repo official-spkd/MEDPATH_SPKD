@@ -29,7 +29,7 @@ const aktif = computed(() => semua.value.filter((c) => c.status === 'AKTIF'))
     <PageHeader judul="CP Aktif" demo sub="Clinical Pathway yang telah disahkan Direktur dan dipakai sistem pelayanan (TransCPR-X) lewat API integrasi." />
 
     <div class="grid">
-      <article v-for="c in aktif" :key="c.kode" class="card cp">
+      <router-link v-for="c in aktif" :key="c.kode" :to="`/library/${c.kode}`" class="card cp">
         <div class="cp-head">
           <span class="mono kode">{{ c.kode }}</span>
           <span class="badge aktif"><BadgeCheck :size="13" /> Aktif</span>
@@ -45,7 +45,7 @@ const aktif = computed(() => semua.value.filter((c) => c.status === 'AKTIF'))
           <span><Calendar :size="13" /> Sejak {{ c.status_sejak }}</span>
           <span><FileText :size="13" /> v1</span>
         </div>
-      </article>
+      </router-link>
     </div>
   </div>
 </template>

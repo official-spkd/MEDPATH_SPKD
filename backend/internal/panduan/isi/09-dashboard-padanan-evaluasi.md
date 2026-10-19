@@ -65,7 +65,7 @@ Contoh: "Apendektomi" ↔ "Apendektomi laparoskopik/terbuka" → kata sama `apen
 
 Tujuan konsep: membandingkan klaim **sesudah** CP aktif dengan target yang berlaku **saat CP disahkan**, pada dua sisi — mutu (lama rawat) dan biaya (tarif INA-CBG). Biaya riil rumah sakit tidak dimuat.
 
-> **Penting:** karena impor klaim belum ada, angka evaluasi saat ini **sintetis tapi deterministik** — dibangkitkan dari hash kode CP (`hashKode`), sehingga selalu sama untuk CP yang sama. Logika temuan-nya sudah nyata; sumber datanya yang belum.
+> Evaluasi membaca `klaim_episode`. Hanya episode dengan tanggal masuk pada atau setelah tanggal aktif CP yang dihitung sebagai periode sesudah. Tanpa episode, halaman menampilkan belum ada data. Pengisian klaim sumber harus dilakukan melalui proses impor yang divalidasi; data pasien tidak diperlukan dalam tabel ini.
 
 ### Kendali mutu (per severity)
 

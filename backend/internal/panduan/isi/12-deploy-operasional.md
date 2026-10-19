@@ -98,7 +98,7 @@ cd ../frontend && npm ci && npm run build
 sudo systemctl restart medpath
 ```
 
-Restart backend **mengeluarkan semua pengguna** (sesi di memori). Jadwalkan rilis di luar jam sibuk dan umumkan sebelumnya — sampai sesi persisten dibangun.
+Restart backend tidak menghapus sesi PostgreSQL. Hash token dan masa berlaku 24 jam disimpan di `auth_sessions`; sesi demo in-memory tetap hilang setelah restart.
 
 ## Rollback
 

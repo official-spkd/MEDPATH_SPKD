@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -13,6 +14,21 @@ import (
 // Bila pool nil, store berjalan murni di memori.
 
 const skema = `
+CREATE TABLE IF NOT EXISTS app_users (
+ id INT PRIMARY KEY, nama TEXT NOT NULL, email TEXT UNIQUE NOT NULL,
+ peran TEXT NOT NULL, password_hash TEXT NOT NULL, aktif BOOLEAN NOT NULL DEFAULT TRUE
+);
+ALTER TABLE app_users ENABLE ROW LEVEL SECURITY;
+CREATE TABLE IF NOT EXISTS klaim_episode (
+ id TEXT PRIMARY KEY, kode_cp TEXT NOT NULL, tanggal_masuk DATE NOT NULL,
+ severity TEXT NOT NULL CHECK (severity IN ('I','II','III')),
+ los INT NOT NULL CHECK(los>=1), tarif BIGINT NOT NULL CHECK(tarif>=0),
+ icu BOOLEAN NOT NULL DEFAULT FALSE, di_luar_pola BOOLEAN NOT NULL DEFAULT FALSE
+);
+CREATE INDEX IF NOT EXISTS klaim_episode_cp_tanggal ON klaim_episode(kode_cp,tanggal_masuk);
+ALTER TABLE klaim_episode ENABLE ROW LEVEL SECURITY;
+CREATE TABLE IF NOT EXISTS app_state (kunci TEXT PRIMARY KEY, isi JSONB NOT NULL);
+ALTER TABLE app_state ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS auth_sessions (
  token_hash TEXT PRIMARY KEY, user_id INT NOT NULL, expires_at TIMESTAMPTZ NOT NULL
 );
@@ -68,6 +84,7 @@ func (s *Store) pasangDB(pool *pgxpool.Pool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	return pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
+		log.Println("Terhubung ke PostgreSQL.")
 		if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock(71423001)"); err != nil {
 			return err
 		}
@@ -79,10 +96,12 @@ func (s *Store) pasangDB(pool *pgxpool.Pool) error {
 			return err
 		}
 		if n == 0 {
+			log.Println("DB kosong — menanam data demo awal ke PostgreSQL…")
 			initial := newBase()
 			initial.db, initial.ctx = tx, ctx
 			return initial.seedDB()
 		}
+		log.Printf("Memuat state dari PostgreSQL (%d CP)…", n)
 		return nil
 	})
 }
@@ -287,7 +306,13 @@ func (s *Store) loadDB() error {
 		return err
 	}
 	ps.Close()
-	return nil
+	if err := s.loadUsers(); err != nil {
+		return err
+	}
+	if err := s.loadAdministrasi(); err != nil {
+		return err
+	}
+	return s.loadKlaim()
 }
 
 // --- Write-through (dipanggil dari dalam lock store; no-op bila pool nil) ---

@@ -44,7 +44,7 @@ const hasil = computed(() =>
 
 <template>
   <div>
-    <PageHeader judul="CP Library" demo sub="Seluruh Clinical Pathway yang disusun dari pola klaim INA-CBG — telusuri, saring status, dan buka detail." />
+    <PageHeader judul="Pustaka CP" demo sub="Seluruh Clinical Pathway yang disusun dari pola klaim INA-CBG — telusuri, saring status, dan buka detail." />
 
     <!-- Filter -->
     <div class="card filter-bar">

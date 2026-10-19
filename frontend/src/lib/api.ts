@@ -1,4 +1,5 @@
 // Klien API tipis ke backend Go. Token disimpan di localStorage.
+import { useFilter } from '@/stores/filter'
 const BASE = '/api/v1'
 const KUNCI_TOKEN = 'transcpg-token'
 
@@ -28,6 +29,11 @@ export class GalatApi extends Error {
 }
 
 export async function api<T>(jalur: string, opsi: RequestInit = {}): Promise<T> {
+  if (['dashboard', 'cp', 'approval', 'evaluasi'].includes(jalur)) {
+    const filter = useFilter()
+    const query = new URLSearchParams({ rs: filter.rumahSakit, layanan: filter.layanan })
+    jalur += `?${query}`
+  }
   const headers = new Headers(opsi.headers)
   headers.set('Accept', 'application/json')
   if (opsi.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')

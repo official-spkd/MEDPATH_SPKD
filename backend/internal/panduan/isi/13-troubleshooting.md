@@ -10,7 +10,7 @@
 | Data tidak berubah setelah aksi berhasil | respons GET tersaji dari cache peramban | pastikan request lewat `api()` (punya cache-buster) dan backend mengirim `Cache-Control: no-store` |
 | Stuck di "Memuat…" setelah memperbarui rute di dev | Vite gagal me-*resolve* import dinamis (mis. rute ditambah sebelum file halamannya ada), chunk gagal ter-cache | restart `npm run dev`, muat ulang keras halaman |
 | Pindah dari CP A ke CP B tapi isi tetap CP A | komponen dipakai ulang; `onMounted` tidak terpanggil | muat data lewat `watch(param, muat, { immediate: true })` |
-| Tiba-tiba dilempar ke halaman Login | backend restart → token tidak dikenal (`401`) | login ulang (perilaku normal sampai sesi persisten dibangun) |
+| Tiba-tiba dilempar ke halaman Login | token kedaluwarsa/dicabut (`401`) | login ulang; restart PostgreSQL tidak menghapus sesi yang masih berlaku |
 | Menu Pengaturan / Panduan tidak muncul | peran tidak memenuhi | Pengaturan: admin; Panduan: SUPER_ADMIN |
 | Warna emas/kuning muncul di komponen baru | hex ditulis langsung | ganti dengan token `var(--brand…)` |
 

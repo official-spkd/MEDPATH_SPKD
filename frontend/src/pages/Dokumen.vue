@@ -2,6 +2,8 @@
 import { ref, onMounted } from 'vue'
 import { BookOpenText, Bookmark } from 'lucide-vue-next'
 import { api } from '@/lib/api'
+import { useAuth } from '@/stores/auth'
+const auth = useAuth()
 import { LABEL_SUMBER } from '@/lib/format'
 import PageHeader from '@/components/PageHeader.vue'
 
@@ -31,11 +33,11 @@ const warnaSumber: Record<string, string> = {
 <template>
   <div>
     <PageHeader judul="Dokumen Panduan" demo sub="PPK, PNPK, dan panduan asosiasi profesi — sumber acuan klinis yang butirnya diekstrak untuk menyusun CP.">
-      <template #aksi><button class="btn btn-brand"><BookOpenText :size="16" /> Tambah Dokumen</button></template>
+      <template #aksi><router-link v-if="auth.isAdmin" to="/dokumen/baru" class="btn btn-brand"><BookOpenText :size="16" /> Tambah Dokumen</router-link></template>
     </PageHeader>
 
     <div class="grid">
-      <article v-for="dk in data" :key="dk.id" class="card dok">
+      <router-link v-for="dk in data" :key="dk.id" :to="`/dokumen/${dk.id}`" class="card dok">
         <div class="dok-head">
           <span class="dok-ikon"><BookOpenText :size="18" /></span>
           <span class="badge" :class="`s-${warnaSumber[dk.sumber] ?? 'brand'}`">{{ LABEL_SUMBER[dk.sumber] ?? dk.sumber }}</span>
@@ -49,7 +51,7 @@ const warnaSumber: Record<string, string> = {
           <Bookmark :size="14" />
           <span class="angka">{{ dk.butir_count }}</span> butir acuan terekstrak
         </div>
-      </article>
+      </router-link>
     </div>
   </div>
 </template>

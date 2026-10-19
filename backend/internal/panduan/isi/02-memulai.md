@@ -38,7 +38,7 @@ Memuat state dari PostgreSQL (24 CP)…                  ← jalankan berikutnya
 MedPath API berjalan di http://127.0.0.1:8080/api/v1
 ```
 
-Kalau PostgreSQL mati atau tidak terjangkau, backend **tetap jalan** dengan data in-memory dan mencetak peringatan `… memakai data in-memory`. Semua perubahan pada mode ini hilang saat restart.
+Jika PostgreSQL tidak tersedia, startup gagal; server tidak beralih ke penyimpanan sementara. Demo lokal tanpa database hanya diaktifkan secara eksplisit dengan `DEMO_IN_MEMORY=true` (tidak berlaku di Vercel). Perubahan mode demo hilang setelah restart.
 
 ## 3. Jalankan frontend
 
@@ -88,7 +88,7 @@ psql -d transcpg -c "DROP TABLE IF EXISTS cp_state,cp_acuan,cp_kriteria,cp_renca
 cd backend && go run .     # skema dibuat ulang + seed
 ```
 
-Setelah backend restart, **semua sesi login hilang** (token disimpan di memori) — pengguna perlu login ulang.
+Dalam mode PostgreSQL, sesi disimpan sebagai hash token di `auth_sessions` dengan masa berlaku 24 jam. Restart tidak menghapus sesi. Logout membatalkan sesi lintas instance. Mode demo lokal memakai sesi dalam memori.
 
 ## Perintah harian
 
