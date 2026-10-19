@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { Stamp } from 'lucide-vue-next'
-import { api } from '@/lib/api'
+import { api, GalatApi } from '@/lib/api'
 import { angka } from '@/lib/format'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusPill from '@/components/StatusPill.vue'
@@ -18,11 +18,14 @@ interface CP {
 
 const data = ref<CP[]>([])
 const memuat = ref(true)
+const galat = ref('')
 
 onMounted(async () => {
   try {
     const res = await api<{ data: CP[] }>('approval')
     data.value = res.data ?? []
+  } catch(e) {
+    galat.value = e instanceof GalatApi ? e.message : 'Gagal memuat antrean pengesahan.'
   } finally {
     memuat.value = false
   }
@@ -41,7 +44,8 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div v-if="!memuat && !data.length" class="kosong">Tidak ada CP dalam antrean pengesahan. 🎉</div>
+      <div v-if="galat" class="kosong" role="alert">{{ galat }}</div>
+      <div v-else-if="!memuat && !data.length" class="kosong">Tidak ada CP dalam antrean pengesahan. 🎉</div>
 
       <ul v-else class="list">
         <li v-for="c in data" :key="c.kode" class="item">

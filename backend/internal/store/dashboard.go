@@ -113,7 +113,7 @@ func (s *Store) Dashboard(filter ...string) Dashboard {
 	}
 
 	// Kelompok diagnosis diurutkan dari episode terbanyak.
-	var kelompok []KelompokBar
+	kelompok := []KelompokBar{}
 	for kode, ep := range perKelompokEpisode {
 		nama := kelompokCMG[kode]
 		if nama == "" {
@@ -126,7 +126,7 @@ func (s *Store) Dashboard(filter ...string) Dashboard {
 	// Prioritas penyusunan: volume terbanyak.
 	sorted := append([]CP(nil), cps...)
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].JumlahEpisode > sorted[j].JumlahEpisode })
-	var prioritas []Prioritas
+	prioritas := []Prioritas{}
 	for i, c := range sorted {
 		if i >= 8 {
 			break
@@ -152,6 +152,10 @@ func (s *Store) Dashboard(filter ...string) Dashboard {
 		{"Butir acuan terekstrak", butirTotal, 220},
 	}
 	skor := readinessSkor(komponen)
+	episodeTren := []int{820, 910, 1180, 1340, 1510}
+	if len(cps) == 0 {
+		episodeTren = []int{0, 0, 0, 0, 0}
+	}
 
 	return Dashboard{
 		Kartu: KartuDashboard{
@@ -174,11 +178,11 @@ func (s *Store) Dashboard(filter ...string) Dashboard {
 		Prioritas:     prioritas,
 		ButirKategori: butirKategori,
 		Tren: []TitikTren{
-			{"2026-05", 820, s.aktifPada("2026-05", cps)},
-			{"2026-06", 910, s.aktifPada("2026-06", cps)},
-			{"2026-07", 1180, s.aktifPada("2026-07", cps)},
-			{"2026-08", 1340, s.aktifPada("2026-08", cps)},
-			{"2026-09", 1510, s.aktifPada("2026-09", cps)},
+			{"2026-05", episodeTren[0], s.aktifPada("2026-05", cps)},
+			{"2026-06", episodeTren[1], s.aktifPada("2026-06", cps)},
+			{"2026-07", episodeTren[2], s.aktifPada("2026-07", cps)},
+			{"2026-08", episodeTren[3], s.aktifPada("2026-08", cps)},
+			{"2026-09", episodeTren[4], s.aktifPada("2026-09", cps)},
 			{"2026-10", totalEpisode, aktif},
 		},
 		Tindakan: []Tindakan{

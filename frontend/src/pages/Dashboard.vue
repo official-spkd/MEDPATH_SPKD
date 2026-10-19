@@ -71,7 +71,7 @@ const segmenStatus = computed(() =>
   })),
 )
 const trenData = computed(() => d.value?.tren.map((t) => ({ periode: t.periode, episode: t.episode, cpAktif: t.cp_aktif })) ?? [])
-const totalEpisodeKelompok = computed(() => d.value?.per_kelompok.reduce((a, k) => a + k.episode, 0) ?? 0)
+const totalEpisodeKelompok = computed(() => d.value?.per_kelompok?.reduce((a, k) => a + k.episode, 0) ?? 0)
 const maxButir = computed(() => Math.max(1, ...Object.values(d.value?.butir_per_kategori ?? {})))
 </script>
 

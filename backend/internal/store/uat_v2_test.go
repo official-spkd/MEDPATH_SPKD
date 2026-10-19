@@ -129,7 +129,11 @@ func TestUATV2DashboardDanAntrean(t *testing.T) {
 	if q := s.Approval(); q == nil || len(q) != 0 {
 		t.Fatal("antrean kosong harus []")
 	}
-	if s.Dashboard("RSUD Demo SPKD", "Rawat Jalan").Kartu.JumlahCP != 0 {
+	empty := s.Dashboard("RSUD Demo SPKD", "Rawat Jalan")
+	if empty.PerKelompok == nil || empty.Prioritas == nil {
+		t.Fatal("dashboard kosong mengirim null")
+	}
+	if empty.Kartu.JumlahCP != 0 {
 		t.Fatal("filter layanan diabaikan")
 	}
 	if len(s.ListCPFiltered("RSUD Demo SPKD", "Rawat Inap")) != 24 {
