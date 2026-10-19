@@ -167,7 +167,7 @@ func TestUATV2Padanan(t *testing.T) {
 			found = true
 		}
 	}
-	if !found {
+	if !found || len(s.UsulanSnomed("J44.0")) != 1 {
 		t.Fatal("singkatan PPOK")
 	}
 	pairs := map[string]string{"39.95": "KPTL-01", "88.72": "KPTL-02", "87.44": "KPTL-03", "99.04": "KPTL-04", "47.09": "KPTL-05", "89.52": "KPTL-06", "96.04": "KPTL-07", "93.94": "KPTL-08", "38.93": "KPTL-09", "87.03": "KPTL-10", "99.15": "KPTL-11", "45.23": "KPTL-12"}

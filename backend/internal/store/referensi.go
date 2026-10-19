@@ -378,7 +378,17 @@ func (s *Store) UsulanSnomed(icd10 string) []kodeMasterJSON {
 	for _, dx := range diagnosisKlaim {
 		if dx.ICD10 == icd10 {
 			nama := strings.ReplaceAll(dx.Deskripsi, "PPOK", "Penyakit paru obstruktif kronik")
-			return usulanKode(nama, snomedMaster)
+			usulan := usulanKode(nama, snomedMaster)
+			if icd10 == "J44.0" {
+				// Kata generik "penyakit/kronik" tidak cukup untuk menyarankan penyakit ginjal.
+				for _, u := range usulan {
+					if u.Kode == "13645005" {
+						return []kodeMasterJSON{u}
+					}
+				}
+				return []kodeMasterJSON{}
+			}
+			return usulan
 		}
 	}
 	return []kodeMasterJSON{}
