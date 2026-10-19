@@ -6,9 +6,9 @@
 
 | Kode | Label | Arti |
 |---|---|---|
-| `DRAFT` | Draft | sedang disusun |
-| `REVIEW_TIM_CP` | Review Tim CP | diajukan, ditinjau Tim CP |
-| `REVIEW_KOMITE` | Review Komite Medik | lolos Tim CP, ditinjau Komite |
+| `DRAFT` | Draf | sedang disusun |
+| `REVIEW_TIM_CP` | Tinjauan Tim CP | diajukan, ditinjau Tim CP |
+| `REVIEW_KOMITE` | Tinjauan Komite Medik | lolos Tim CP, ditinjau Komite |
 | `MENUNGGU_DIREKTUR` | Menunggu Direktur | lolos Komite, menunggu pengesahan |
 | `AKTIF` | Aktif | disahkan; dipakai memandu pelayanan |
 | `REVISI` | Perlu Revisi | dikembalikan dari salah satu tahap |
@@ -74,7 +74,7 @@ Fungsi terkait:
 
 Penolakan dikembalikan sebagai HTTP `422` dengan pesan di atas.
 
-> **Celah yang perlu diketahui:** UI mewajibkan *alasan* saat KEMBALIKAN, tetapi backend belum memvalidasinya. Bila suatu saat ada klien lain (mis. integrasi), tambahkan pengecekan `alasan != ""` untuk aksi KEMBALIKAN di `Transisi`.
+> Alasan KEMBALIKAN wajib diisi pada UI dan backend. Server melakukan trim dan menolak teks kosong dengan HTTP 422 sebelum mengubah status.
 
 ## Kapan isi CP boleh diubah (`pengubahIsi`)
 
@@ -96,15 +96,15 @@ Alasan penguncian: yang disahkan Direktur harus **sama persis** dengan yang diti
 |---|---|---|---|---|---|
 | 1 | `ACUAN_CP` | Acuan standar CP — minimal satu dokumen | **Ya** | Tim CP · KSM | `len(acuan) > 0` |
 | 2 | `RENCANA_SEVERITY` | Rencana isi klinis tiap severity dengan data cukup | **Ya** | Tim CP · DPJP · Farmasi | tiap severity dengan **≥ 10 episode** wajib punya ≥ 1 rencana |
-| 3 | `ACUAN_SUB_CP` | Acuan tiap sub-CP | Tidak | Tim CP · KSM terkait | setiap sub-CP `ada_acuan` |
-| 4 | `PADANAN_KPTL` | Padanan KPTL tiap prosedur | Tidak | Tim Koding | *demo:* terpenuhi bila CP punya rencana |
+| 3 | `ACUAN_SUB_CP` | Acuan tiap sub-CP | Tidak | Tim CP · KSM terkait | setiap sub-CP mewarisi acuan CP induk |
+| 4 | `PADANAN_KPTL` | Padanan KPTL tiap prosedur | Tidak | Tim Koding | seluruh kode ICD9 dalam rencana mempunyai padanan KPTL; CP tanpa rencana belum lengkap |
 | 5 | `TARIF_SEVERITY` | Tarif INA-CBG tiap severity | Tidak | Admin · data tarif | *demo:* terpenuhi bila CP punya rencana |
 | 6 | `PADANAN_SNOMED` | Padanan SNOMED-CT tiap diagnosis | Tidak | Tim Koding | *demo:* terpenuhi bila CP punya acuan |
 | 7 | `ICD10_MASTER` | Kode ICD-10 sesuai master | Tidak | Tim Koding | *demo:* selalu terpenuhi |
 
 Semua syarat **selalu dihitung** (bukan berhenti di yang pertama gagal) supaya UI bisa menampilkan seluruh kekurangan sekaligus. Hanya syarat 1 dan 2 yang memblokir SAHKAN.
 
-Syarat 4–7 masih heuristik demo. Untuk versi produksi, rujuk logika asli di `_legacy/backend-laravel/app/Cpg/PemeriksaSyarat.php`: KPTL dicek dari prosedur klaim yang belum punya padanan, tarif dari tabel tarif per kelas, SNOMED dari padanan berstatus bukan RAGU, ICD-10 dari master.
+Syarat 4 mengikuti padanan prosedur dalam rencana; syarat 5–7 masih heuristik demo. Untuk versi produksi, rujuk logika asli di `_legacy/backend-laravel/app/Cpg/PemeriksaSyarat.php`: KPTL dicek dari prosedur klaim yang belum punya padanan, tarif dari tabel tarif per kelas, SNOMED dari padanan berstatus bukan RAGU, ICD-10 dari master.
 
 ## Riwayat (audit trail)
 

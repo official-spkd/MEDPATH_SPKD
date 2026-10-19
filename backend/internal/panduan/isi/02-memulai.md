@@ -67,7 +67,7 @@ BACKEND_URL=http://127.0.0.1:9090 npm run dev
 
 ## Akun demo
 
-Semua akun memakai sandi **`Demo-SPKD-2026`**. Di halaman login, klik chip peran untuk masuk instan.
+Akun demo hanya untuk pengujian. Chip masuk instan hanya tersedia pada server pengembangan (`npm run dev`); build produksi memakai formulir email/sandi biasa. Super Admin dapat membuat akun non-demo dan menonaktifkan akun demo setelah akses pengganti terverifikasi.
 
 | Email | Peran | Bisa apa (ringkas) |
 |---|---|---|

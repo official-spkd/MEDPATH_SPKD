@@ -17,7 +17,7 @@ Satu panggilan `GET /dashboard` menghitung semuanya dari daftar CP saat itu.
 | Dokumen panduan | jumlah dokumen |
 | Butir acuan klinis | jumlah seluruh butir per kategori |
 
-### MedPath Readiness Index
+### Indeks Kesiapan MedPath
 
 Lima komponen, masing-masing rasio `nilai / maks` dibatasi maksimal 1:
 
@@ -36,8 +36,8 @@ Lima komponen, masing-masing rasio `nilai / maks` dibatasi maksimal 1:
 - **Distribusi status** → hitungan per status.
 - **Kasus per kelompok diagnosis** → total episode per CMG, urut terbesar.
 - **Prioritas penyusunan** → 8 CP dengan episode terbanyak.
-- **Tren** → lima bulan pertama **masih angka tetap** di kode; hanya bulan terakhir dihitung dari data nyata.
-- **Tindakan prioritas** → **teks tetap** di kode (belum dihitung dinamis).
+- **Tren** → CP aktif historis direkonstruksi dari riwayat; volume episode lima bulan awal masih data demo. Bulan terakhir memakai agregat CP saat ini.
+- **Tindakan prioritas** → jumlah pengesahan, tanpa acuan, dan revisi dihitung dari data CP saat ini.
 
 ## Padanan kode (`store/referensi.go`)
 
@@ -69,7 +69,7 @@ Tujuan konsep: membandingkan klaim **sesudah** CP aktif dengan target yang berla
 
 ### Kendali mutu (per severity)
 
-- `target_los` = LOS median severity itu; `target_p75 = target_los + 2`.
+- Target menggunakan median/p75 episode sebelum aktif bila tersedia; jika belum ada, memakai statistik severity demo (median dan median + 2).
 - Dibandingkan dengan LOS median & persentase episode yang melewati p75 target sesudah CP aktif.
 
 ### Aturan temuan
